@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Secrets / broker credentials
+.env
+*.key
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

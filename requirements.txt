@@ -1,0 +1,6 @@
+streamlit>=1.37
+pandas>=2.0
+numpy>=1.24
+plotly>=5.18
+exchange_calendars>=4.5
+yfinance>=0.2          # optional: only for the Yahoo Finance feed
