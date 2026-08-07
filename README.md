@@ -1,0 +1,2 @@
+# TradingView-Trendling
+Trendline Equations
