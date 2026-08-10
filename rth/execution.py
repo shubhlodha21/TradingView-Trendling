@@ -166,32 +166,89 @@ class Launch:
 class ClientIdAllocator:
     """Hands out a fresh IB client id per launch, surviving restarts.
 
-    The counter lives in a file because the alternative -- starting from the
-    base every run -- would re-issue ids to bots that are still running from an
-    earlier session, and TWS resolves a duplicate id by dropping the *older*
-    connection. That would silently disconnect a bot holding a position.
+    Ids must never repeat: TWS resolves a duplicate client id by dropping the
+    *older* connection, so re-issuing one silently disconnects a bot that is
+    holding a position -- no error, the feed just goes quiet.
+
+    Allocation is therefore a claim, not a counter. Each id is reserved by
+    creating a marker file with O_CREAT|O_EXCL, which is atomic across
+    processes on every OS; whoever loses the race gets FileExistsError and
+    moves to the next number. A plain read-increment-write counter is NOT
+    enough -- several bots launched in the same cycle, or one runner per ticker
+    in separate tmux panes, all read the same value and all write the same
+    successor, and every one of them ends up with the same id.
+
+    The counter file is still maintained alongside, as a fast-forward hint and
+    so ``peek`` can report the next id before anything is claimed.
     """
 
     def __init__(self, path: str | os.PathLike, base: int = 100):
         self.path = Path(path)
+        # One tiny marker file per claimed id, beside the counter.
+        self.reserved_dir = self.path.parent / f"{self.path.name}.d"
         self.base = int(base)
         self._lock = threading.Lock()
 
-    def peek(self) -> int:
+    # -- inspection ---------------------------------------------------------
+
+    def _counter_hint(self) -> int:
         try:
-            return max(int(self.path.read_text().strip()), self.base - 1)
+            return int(self.path.read_text().strip())
         except (OSError, ValueError):
             return self.base - 1
 
+    def _highest_claim(self) -> int:
+        try:
+            claimed = [int(p.name) for p in self.reserved_dir.iterdir()
+                       if p.name.isdigit()]
+        except OSError:
+            return self.base - 1
+        return max(claimed) if claimed else self.base - 1
+
+    def peek(self) -> int:
+        """The highest id handed out so far (base - 1 if none)."""
+        return max(self.base - 1, self._counter_hint(), self._highest_claim())
+
+    # -- allocation ---------------------------------------------------------
+
     def next(self) -> int:
-        with self._lock:
-            value = self.peek() + 1
+        """Claim and return an id no other process can also be holding."""
+        with self._lock:                       # cheap in-process fast path
+            candidate = self.peek() + 1
             try:
-                self.path.parent.mkdir(parents=True, exist_ok=True)
-                self.path.write_text(str(value), encoding="utf-8")
+                self.reserved_dir.mkdir(parents=True, exist_ok=True)
             except OSError:
-                pass            # a read-only log dir must not block a trade
-            return value
+                # A read-only log dir must not block a trade. Fall back to the
+                # counter alone and accept the (now unguarded) race.
+                self._write_hint(candidate)
+                return candidate
+
+            # Bounded so a corrupted directory cannot spin forever.
+            for _ in range(10_000):
+                marker = self.reserved_dir / str(candidate)
+                try:
+                    handle = os.open(marker, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                except FileExistsError:
+                    candidate += 1
+                    continue
+                except OSError:
+                    self._write_hint(candidate)
+                    return candidate
+                os.close(handle)
+                self._write_hint(candidate)
+                return candidate
+
+            raise RuntimeError(
+                f"could not claim a client id in {self.reserved_dir} after "
+                f"10,000 attempts starting at {self.peek() + 1}"
+            )
+
+    def _write_hint(self, value: int) -> None:
+        try:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            self.path.write_text(str(value), encoding="utf-8")
+        except OSError:
+            pass                # bookkeeping must never stop a trade
 
 
 class TradeLauncher:

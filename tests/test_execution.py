@@ -153,6 +153,37 @@ check("a fresh process continues the sequence",
 check("the counter is on disk", (WORK / "client_id").read_text().strip(),
       str(after_restart.client_id))
 
+# The failure this guards against: TWS resolves a duplicate client id by
+# dropping the OLDER connection, so two bots on one id means one silently
+# loses its feed while holding a position. A read-increment-write counter is
+# not enough -- three tickers signalling in the same cycle, or one runner per
+# tmux pane, all read the same value and all write the same successor.
+import threading as _threading  # noqa: E402
+
+concurrent_dir = WORK / "concurrent"
+grabbed: list[int] = []
+grab_lock = _threading.Lock()
+
+
+def _grab():
+    value = ClientIdAllocator(concurrent_dir / "cid", base=100).next()
+    with grab_lock:
+        grabbed.append(value)
+
+
+workers = [_threading.Thread(target=_grab) for _ in range(20)]
+for w in workers:
+    w.start()
+for w in workers:
+    w.join()
+
+check("twenty simultaneous allocations are all distinct",
+      len(set(grabbed)), len(grabbed))
+check("...and are contiguous from the base", sorted(grabbed),
+      list(range(100, 120)))
+truthy("each claim leaves a marker so it can never be reissued",
+       len(list((concurrent_dir / "cid.d").iterdir())) == 20)
+
 fresh_dir = WORK / "fresh"
 first_ever = launcher(
     allocator=ClientIdAllocator(fresh_dir / "counter", base=250)
