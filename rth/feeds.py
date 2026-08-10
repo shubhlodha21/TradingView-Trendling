@@ -308,7 +308,15 @@ def get_feed(kind: str, **kwargs) -> PriceFeed:
         "yfinance": YFinanceFeed,
         "broker": BrokerFeed,
     }
+    if kind == "ibkr":
+        # Imported here so the package stays usable without the IB client
+        # library installed.
+        from .ibkr import IBKRFeed
+
+        return IBKRFeed(**kwargs)
     try:
         return feeds[kind](**kwargs)
     except KeyError:
-        raise ValueError(f"Unknown feed {kind!r}; choose from {sorted(feeds)}") from None
+        raise ValueError(
+            f"Unknown feed {kind!r}; choose from {sorted([*feeds, 'ibkr'])}"
+        ) from None

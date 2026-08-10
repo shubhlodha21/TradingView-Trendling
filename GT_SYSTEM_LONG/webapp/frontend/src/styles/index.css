@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Base ───────────────────────────────────────────────────────────── */
+html, body, #root { height: 100%; }
+body {
+  font-feature-settings: "ss01", "cv11", "tnum";
+}
+
+/* Tabular numbers everywhere a price or qty renders — keeps columns
+   from jittering as digits change. Applied to .num utility class so
+   we don't pay the cost in labels and headings. */
+.num { font-variant-numeric: tabular-nums; }
+
+/* Subtle teal glow above the top header — mimics the Hyperliquid
+   spotlight effect without needing a real radial gradient on every
+   element. Single positioned div in App.tsx wears this. */
+.bg-stage-glow {
+  background-image: radial-gradient(
+    1200px 320px at 50% -100px,
+    rgba(63, 208, 201, 0.18),
+    transparent 70%
+  );
+}
+
+/* Order-book ladder rows use a colored bar painted from the right via
+   linear-gradient so the depth bar stays under the text and scales
+   with the row's volume fraction. */
+.depth-bid {
+  background-image: linear-gradient(
+    to left,
+    rgba(57, 217, 138, 0.14) var(--depth, 0%),
+    transparent var(--depth, 0%)
+  );
+}
+.depth-ask {
+  background-image: linear-gradient(
+    to left,
+    rgba(239, 71, 120, 0.14) var(--depth, 0%),
+    transparent var(--depth, 0%)
+  );
+}
+
+/* Scrollbars — thin, ink-toned, only show on hover. The default
+   Chrome/Safari scrollbar is a visual heavyweight; this hides it
+   into the panel chrome. */
+* { scrollbar-width: thin; scrollbar-color: #1d2832 transparent; }
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb {
+  background: #1d2832;
+  border-radius: 4px;
+}
+*::-webkit-scrollbar-thumb:hover { background: #2a3744; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+/* Panel — the recurring rounded-card with a hairline border. Composed
+   instead of repeated `border border-ink-800 rounded-xl bg-ink-900`
+   everywhere. */
+.panel {
+  @apply rounded-xl border border-ink-800 bg-ink-900/70 backdrop-blur-sm;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.02),
+              0 8px 24px -16px rgba(0, 0, 0, 0.7);
+}
+.panel-tight { @apply panel p-2; }
+.panel-pad { @apply panel p-4; }
+
+/* Tab — minimal, underline-accent-on-active. Applied via Tab.tsx but
+   kept here so a third panel can reuse the visual without depending
+   on the Tab component. */
+.tab {
+  @apply px-3 py-1.5 text-xs font-medium text-ink-600 hover:text-zinc-200
+         border-b border-transparent transition-colors;
+}
+.tab-active {
+  @apply text-teal border-b border-teal;
+}
+
+/* Pulse-on-update — used for live cells. Toggled via a data attribute
+   so the animation re-runs without re-mounting the node. */
+@keyframes flashGreen { 0% { background: rgba(57,217,138,0.20); } 100% { background: transparent; } }
+@keyframes flashRed   { 0% { background: rgba(239,71,120,0.20); } 100% { background: transparent; } }
+[data-flash="up"]   { animation: flashGreen 0.4s ease-out; }
+[data-flash="down"] { animation: flashRed 0.4s ease-out; }

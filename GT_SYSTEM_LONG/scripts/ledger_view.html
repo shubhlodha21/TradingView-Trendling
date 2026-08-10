@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>GT · Live Ledger Graph</title>
+<style>
+  :root { --bg:#0b0d10; --fg:#e8eaed; --dim:#8a909a; --line:#222730;
+          --long:#37d67a; --short:#ff5c6c; --flat:#5b6471; --cyc:#ffcf5c; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--fg);
+    font:13px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; overflow:hidden; }
+  #wrap { display:grid; grid-template-columns: 1fr 370px; grid-template-rows: 1fr 132px; height:100vh; }
+  #canvas { display:block; width:100%; height:100%; grid-row:1; grid-column:1; }
+  #side { grid-row:1 / span 2; grid-column:2; border-left:1px solid var(--line); overflow:auto; padding:8px 12px; }
+  #ticker { grid-row:2; grid-column:1; border-top:1px solid var(--line); overflow:hidden; padding:6px 10px; }
+  h2 { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim); margin:12px 0 5px; font-weight:600; }
+  .hdr { position:fixed; top:0; left:0; right:370px; display:flex; justify-content:space-between;
+         align-items:center; padding:7px 12px; background:rgba(11,13,16,.85); border-bottom:1px solid var(--line); z-index:5; }
+  .t { letter-spacing:.18em; text-transform:uppercase; color:var(--dim); }
+  .stat { display:flex; gap:13px; flex-wrap:wrap; }
+  .stat b { color:var(--fg); } .stat span { color:var(--dim); }
+  .blind { color:var(--cyc); }
+  table { width:100%; border-collapse:collapse; }
+  td,th { text-align:right; padding:2px 4px; white-space:nowrap; }
+  th { color:var(--dim); font-weight:500; border-bottom:1px solid var(--line); }
+  td.l, th.l { text-align:left; }
+  .long{color:var(--long)} .short{color:var(--short)} .flat{color:var(--flat)} .cyc{color:var(--cyc)}
+  #dot{width:8px;height:8px;border-radius:50%;background:var(--short);display:inline-block;margin-right:6px;vertical-align:middle}
+  #dot.on{background:var(--long)}
+  .small{color:var(--dim);font-size:11px}
+  .keys{color:var(--dim);font-size:11px}
+  .keys b{color:var(--fg)}
+  #heat{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
+  .cell{padding:3px 4px;border-radius:3px;font-size:10px;text-align:center;background:#161a20;color:var(--dim)}
+  .tline{white-space:nowrap;font-size:12px}
+  .tline .px{color:var(--dim)}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="canvas"></canvas>
+  <div id="side">
+    <div class="stat" id="totals"></div>
+    <div class="keys" style="margin-top:6px">keys: <b>C</b> client-color · <b>K</b> cycles · <b>L</b> labels</div>
+    <h2>Currencies (nodes · net cash)</h2>
+    <table id="ccyTbl"><thead><tr><th class="l">CCY</th><th>ledger</th><th>IBKR Δ</th><th>resid</th></tr></thead><tbody></tbody></table>
+    <h2 id="cycH">Blind cycles</h2>
+    <div id="cyc" class="small"></div>
+    <h2>Open pairs (edges)</h2>
+    <table id="pairTbl"><thead><tr><th class="l">PAIR</th><th>pos</th><th>base</th><th>quote</th><th>cid</th></tr></thead><tbody></tbody></table>
+    <h2>Activity heatmap</h2>
+    <div id="heat"></div>
+    <h2>Clients</h2>
+    <div id="clients" class="small"></div>
+  </div>
+  <div id="ticker"><div class="small" style="margin-bottom:3px">FILLS TICKER</div><div id="tlist"></div></div>
+</div>
+<div class="hdr">
+  <span class="t"><span id="dot"></span>GT LIVE LEDGER GRAPH</span>
+  <span class="small" id="conn">connecting…</span>
+</div>
+
+<script>
+"use strict";
+const cv=document.getElementById('canvas'), ctx=cv.getContext('2d');
+let W=0,H=0;
+function resize(){W=cv.clientWidth;H=cv.clientHeight;cv.width=W*devicePixelRatio;cv.height=H*devicePixelRatio;ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);}
+addEventListener('resize',resize);resize();
+
+let nodes={}, edges=[], frame=null, cycleEdges=new Set();
+let colorByClient=false, showCycles=true, showLabels=true;
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();
+  if(k==='c')colorByClient=!colorByClient; else if(k==='k')showCycles=!showCycles; else if(k==='l')showLabels=!showLabels;});
+
+function fmt(n){if(n==null)return '–';const a=Math.abs(n);if(a>=1e6)return(n/1e6).toFixed(2)+'M';if(a>=1e3)return(n/1e3).toFixed(1)+'k';return n.toFixed(0);}
+function cls(n){return Math.abs(n)<1?'flat':(n>0?'long':'short');}
+function cidHue(cid){let h=0;const s=''+cid;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))%360;return h;}
+
+function ingest(g){
+  frame=g;
+  const seen=new Set();
+  for(const c in g.currencies){seen.add(c);
+    if(!nodes[c]){const a=Math.random()*6.28;nodes[c]={x:W/2+Math.cos(a)*140,y:H/2+Math.sin(a)*140,vx:0,vy:0};}
+    nodes[c].net=g.currencies[c].net_cash;nodes[c].deg=g.currencies[c].degree;}
+  for(const c in nodes)if(!seen.has(c))delete nodes[c];
+  edges=g.edges.map(e=>({a:e.base,b:e.quote,pos:e.position,side:e.side,mag:e.magnitude,pair:e.pair,cid:e.client_id}));
+  cycleEdges=new Set();(g.cycles||[]).forEach(cy=>cy.forEach(p=>cycleEdges.add(p)));
+  renderSide(g);renderTicker(g);
+}
+
+function keys(){return Object.keys(nodes);}
+function step(){const ks=keys(),n=ks.length;if(!n)return;
+  for(let i=0;i<n;i++){const A=nodes[ks[i]];for(let j=i+1;j<n;j++){const B=nodes[ks[j]];
+    let dx=A.x-B.x,dy=A.y-B.y,d2=dx*dx+dy*dy+.01,d=Math.sqrt(d2),f=11000/d2,fx=f*dx/d,fy=f*dy/d;
+    A.vx+=fx;A.vy+=fy;B.vx-=fx;B.vy-=fy;}}
+  for(const e of edges){const A=nodes[e.a],B=nodes[e.b];if(!A||!B)continue;
+    let dx=B.x-A.x,dy=B.y-A.y,d=Math.sqrt(dx*dx+dy*dy)+.01,f=(d-160)*.01,fx=f*dx/d,fy=f*dy/d;
+    A.vx+=fx;A.vy+=fy;B.vx-=fx;B.vy-=fy;}
+  for(const k of ks){const P=nodes[k];P.vx+=(W/2-P.x)*.002;P.vy+=(H/2-P.y)*.002;P.vx*=.85;P.vy*=.85;
+    P.x+=P.vx;P.y+=P.vy;P.x=Math.max(46,Math.min(W-46,P.x));P.y=Math.max(56,Math.min(H-46,P.y));}}
+
+let dash=0,pulse=0;
+function draw(){ctx.clearRect(0,0,W,H);dash=(dash+0.6)%16;pulse=(pulse+0.05)%6.2832;
+  for(const e of edges){const A=nodes[e.a],B=nodes[e.b];if(!A||!B)continue;
+    const open=Math.abs(e.pos)>1e-6, inCyc=cycleEdges.has(e.pair);
+    // cycle glow underlay
+    if(open&&inCyc&&showCycles){ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);
+      ctx.lineWidth=(Math.max(1.4,Math.min(8,e.mag/8000)))+6+Math.sin(pulse)*2;
+      ctx.strokeStyle='rgba(255,207,92,'+(0.18+0.12*Math.sin(pulse))+')';ctx.stroke();}
+    ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);
+    ctx.lineWidth=open?Math.max(1.4,Math.min(8,e.mag/8000)):0.6;
+    let col;
+    if(!open)col='rgba(91,100,113,0.22)';
+    else if(colorByClient)col='hsl('+cidHue(e.cid)+',70%,62%)';
+    else col=e.side==='long'?'rgba(55,214,122,.85)':'rgba(255,92,108,.85)';
+    ctx.strokeStyle=col;
+    if(open){ctx.setLineDash([6,6]);ctx.lineDashOffset=e.side==='long'?-dash:dash;}else ctx.setLineDash([]);
+    ctx.stroke();ctx.setLineDash([]);
+    if(open&&showLabels){const mx=(A.x+B.x)/2,my=(A.y+B.y)/2;ctx.fillStyle='rgba(232,234,237,.6)';
+      ctx.font='10px ui-monospace';ctx.textAlign='center';ctx.fillText(e.pair,mx,my-4);}}
+  for(const k of keys()){const P=nodes[k],net=P.net||0;
+    const r=Math.max(11,Math.min(46,11+Math.sqrt(Math.abs(net))/6));
+    const col=Math.abs(net)<1?'#5b6471':(net>0?'#37d67a':'#ff5c6c');
+    // cash-residual ring (LV8) if present
+    const cash=frame&&frame.cash&&frame.cash[k];
+    if(cash){ctx.beginPath();ctx.arc(P.x,P.y,r+5,0,6.2832);
+      ctx.lineWidth=2.5;ctx.strokeStyle=cash.reconciled?'rgba(55,214,122,.55)':'rgba(255,92,108,.9)';ctx.stroke();}
+    ctx.beginPath();ctx.arc(P.x,P.y,r,0,6.2832);ctx.fillStyle='rgba(11,13,16,.92)';ctx.fill();
+    ctx.lineWidth=2;ctx.strokeStyle=col;ctx.stroke();
+    ctx.fillStyle='#e8eaed';ctx.font='bold 13px ui-monospace';ctx.textAlign='center';ctx.fillText(k,P.x,P.y+4);
+    ctx.fillStyle=col;ctx.font='10px ui-monospace';ctx.fillText(fmt(net),P.x,P.y+r+12);}}
+function loop(){step();draw();requestAnimationFrame(loop);}requestAnimationFrame(loop);
+
+function renderSide(g){
+  const t=g.totals;
+  const ext=g.cash_meta&&g.cash_meta.external_detected;
+  const subacc=g.cash_meta&&g.cash_meta.multi_account;
+  document.getElementById('totals').innerHTML=
+    `<span>fills <b>${t.fills}</b></span><span>pairs <b>${t.pairs}</b></span>`+
+    `<span>open <b>${t.open_pairs}</b></span><span>ccy <b>${t.currencies}</b></span>`+
+    `<span class="blind">blind dims <b>${g.blind_dim||0}</b></span>`+
+    (subacc?`<span class="long">sub-acct recon</span>`:'')+
+    (ext?`<span class="short">⚠ EXTERNAL ACTIVITY</span>`:(g.cash_meta?`<span class="long">✓ all ours</span>`:''));
+  // currencies + optional cash residual
+  let rows='';const cc=Object.entries(g.currencies).sort((a,b)=>Math.abs(b[1].net_cash)-Math.abs(a[1].net_cash));
+  for(const[c,v]of cc){const cash=g.cash&&g.cash[c];
+    rows+=`<tr><td class="l">${c}</td><td class="${cls(v.net_cash)}">${fmt(v.net_cash)}</td>`+
+      `<td class="small">${cash?fmt(cash.ibkr_delta):'–'}</td>`+
+      `<td class="${cash?(cash.reconciled?'long':'short'):'small'}">${cash?fmt(cash.residual):'–'}</td></tr>`;}
+  document.querySelector('#ccyTbl tbody').innerHTML=rows;
+  // cycles
+  const cyc=(g.cycles||[]);document.getElementById('cycH').innerHTML='Blind cycles <span class="blind">'+cyc.length+'</span>';
+  document.getElementById('cyc').innerHTML = cyc.length
+    ? cyc.map(c=>'<span class="cyc">↻ '+c.join(' · ')+'</span>').join('<br>')
+    : '<span class="flat">none — no triangular loops open</span>';
+  // open pairs
+  let pr='';const ps=Object.entries(g.pairs).filter(([k,v])=>Math.abs(v.position)>1e-6)
+        .sort((a,b)=>Math.abs(b[1].position)-Math.abs(a[1].position));
+  for(const[k,v]of ps)pr+=`<tr><td class="l">${k}</td><td class="${cls(v.position)}">${fmt(v.position)}</td>`+
+    `<td class="${cls(v.base_leg)}">${fmt(v.base_leg)}</td><td class="${cls(v.quote_leg)}">${fmt(v.quote_leg)}</td>`+
+    `<td class="small">${v.client_id}</td></tr>`;
+  document.querySelector('#pairTbl tbody').innerHTML=pr||'<tr><td class="l flat" colspan="5">all flat</td></tr>';
+  // heatmap (recency by recent_fills)
+  const now=Date.now()/1000, recent={};(g.recent_fills||[]).forEach((f,i)=>{if(!(f.pair in recent))recent[f.pair]=i;});
+  let hc='';for(const k of Object.keys(g.pairs).sort()){const idx=recent[k];
+    const hot=idx==null?0:Math.max(0,1-idx/30);
+    const bg=hot>0?`rgba(255,207,92,${0.12+0.6*hot})`:'#161a20';
+    hc+=`<div class="cell" style="background:${bg}">${k}</div>`;}
+  document.getElementById('heat').innerHTML=hc;
+  // clients
+  let cl='';for(const[cid,v]of Object.entries(g.clients).sort((a,b)=>+a[0]-+b[0])){
+    cl+=`<span style="color:hsl(${cidHue(cid)},70%,62%)">■</span> c${cid} <span class="small">(${v.open} open / ${v.fills}f)</span>  `;}
+  document.getElementById('clients').innerHTML=cl;
+}
+function renderTicker(g){
+  const f=g.recent_fills||[];
+  document.getElementById('tlist').innerHTML=f.slice(0,7).map(x=>
+    `<div class="tline"><span class="${x.side==='BUY'?'long':'short'}">${x.side}</span> `+
+    `${x.shares} <b>${x.pair}</b> <span class="px">@${x.price??'–'}</span> <span class="small">${(x.time||'').slice(11,19)}</span></div>`).join('');
+}
+
+const dot=document.getElementById('dot'),conn=document.getElementById('conn');
+function connect(){const es=new EventSource('/stream');
+  es.onopen=()=>{dot.classList.add('on');conn.textContent='live · 10 FPS';};
+  es.onmessage=ev=>{try{ingest(JSON.parse(ev.data));}catch(e){}};
+  es.onerror=()=>{dot.classList.remove('on');conn.textContent='reconnecting…';};}
+connect();
+</script>
+</body>
+</html>

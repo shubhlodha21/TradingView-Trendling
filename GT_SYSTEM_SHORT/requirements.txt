@@ -1,0 +1,10 @@
+# GT System — runtime dependencies
+# Third-party packages used by run_live.py, the engine, the chaos tests,
+# and the report generator. Everything else is Python stdlib.
+#
+# Install:  pip install -r requirements.txt
+# (Linux only for uvloop; on Windows omit it and drop the --uvloop flag.)
+
+ib_async>=1.0.0        # IBKR API client (TWS / IB Gateway)
+uvloop>=0.19.0         # fast event loop, enabled via run_live.py --uvloop
+nest_asyncio>=1.6.0    # nested-loop compat (defensive; some paths import it)

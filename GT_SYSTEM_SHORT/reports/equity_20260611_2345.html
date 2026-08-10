@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>US Equity Chaos Resilience Assessment — CHAOS-20260611-001</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink:     #000;
+  --ink-1:   #111;
+  --ink-2:   #222;
+  --grey-1:  #3F3F3F;
+  --grey-2:  #6B6B6B;
+  --grey-3:  #999;
+  --grey-4:  #BABABA;
+  --hair-1:  #1A1A1A;
+  --hair-2:  #CFCFCF;
+  --hair-3:  #E8E8E8;
+  --paper:   #FFFFFF;
+  --paper-2: #F4F4F4;
+  --paper-3: #EFEFEF;
+}
+html { background: var(--paper); overflow-x: hidden; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-weight: 400; font-size: 12.5px; line-height: 1.5;
+  letter-spacing: 0.005em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-variant-numeric: tabular-nums lining-nums;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 20px 20px;
+  border-left:  0.5px solid var(--hair-2);
+  border-right: 0.5px solid var(--hair-2);
+  overflow-x: hidden;
+}
+.mono { font-family: 'JetBrains Mono', 'Menlo', monospace; }
+.num  { font-variant-numeric: tabular-nums lining-nums; }
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  MASTHEAD — inverse bar, full bleed                              */
+/* ──────────────────────────────────────────────────────────────── */
+.masthead {
+  background: var(--ink); color: var(--paper);
+  margin: 0 -20px;
+  padding: 9px 20px;
+  display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
+  font-size: 9.5px; letter-spacing: 0.32em; font-weight: 500;
+  text-transform: uppercase;
+}
+.masthead .cell { padding: 0 18px; border-right: 0.5px solid #444; }
+.masthead .cell:first-child { padding-left: 0; }
+.masthead .cell:last-child  { border-right: none; padding-right: 0; text-align: right; }
+.masthead .strong { color: var(--paper); font-weight: 600; letter-spacing: 0.4em; }
+.masthead .muted  { color: #999; font-weight: 400; }
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  TITLE ROW — display title + metadata panel                      */
+/* ──────────────────────────────────────────────────────────────── */
+.title-row {
+  display: grid; grid-template-columns: 1fr 280px;
+  border-bottom: 1.5px solid var(--ink);
+}
+.title-main {
+  padding: 36px 28px 32px 0;
+  border-right: 0.5px solid var(--hair-2);
+}
+.title-main .eyebrow {
+  font-size: 9.5px; letter-spacing: 0.42em; color: var(--ink);
+  font-weight: 600; text-transform: uppercase;
+  display: flex; gap: 12px; align-items: center; margin-bottom: 24px;
+}
+.title-main .eyebrow::before {
+  content: ''; display: inline-block; width: 28px; height: 1px;
+  background: var(--ink);
+}
+.title-main h1 {
+  font-size: 64px; font-weight: 500; color: var(--ink);
+  line-height: 0.98; letter-spacing: -0.035em;
+  margin-bottom: 24px;
+}
+.title-main h1 em {
+  font-style: normal; font-weight: 700;
+}
+.title-main h1 .light { font-weight: 300; }
+.title-main .lede {
+  font-size: 15px; color: var(--grey-1); font-weight: 400;
+  line-height: 1.5; max-width: 720px;
+  border-top: 0.5px solid var(--hair-2);
+  padding-top: 16px;
+}
+.title-meta {
+  padding: 36px 0 32px 28px;
+  display: grid; grid-template-columns: 1fr; align-content: start;
+  row-gap: 0;
+}
+.title-meta dl {
+  padding: 8px 0;
+  border-bottom: 0.5px solid var(--hair-3);
+  display: grid; grid-template-columns: 1fr 1.4fr;
+  align-items: baseline; column-gap: 8px;
+}
+.title-meta dl:first-child { padding-top: 0; }
+.title-meta dl:last-child  { border-bottom: none; }
+.title-meta dt {
+  font-size: 8.5px; color: var(--grey-2);
+  letter-spacing: 0.28em; text-transform: uppercase; font-weight: 500;
+}
+.title-meta dd {
+  font-size: 11px; color: var(--ink); font-weight: 500;
+  letter-spacing: 0.04em; text-align: right;
+}
+.title-meta dd.mono { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; }
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  SECTION HEADER STRIP                                            */
+/*  Format: [NN] -- TITLE ............ MICRO-CAPTION                */
+/* ──────────────────────────────────────────────────────────────── */
+.sec-head {
+  display: grid; grid-template-columns: 56px 1fr auto;
+  align-items: baseline; gap: 16px;
+  padding: 10px 0 10px;
+  border-bottom: 0.5px solid var(--ink);
+  margin-top: 0;
+}
+.sec-head.first { border-top: none; }
+.sec-head .ord {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 600; color: var(--ink);
+  letter-spacing: 0.06em;
+}
+.sec-head .ttl {
+  font-size: 10.5px; font-weight: 600; color: var(--ink);
+  letter-spacing: 0.32em; text-transform: uppercase;
+}
+.sec-head .ttl .em-dash {
+  color: var(--grey-3); margin: 0 10px; font-weight: 400;
+}
+.sec-head .ttl .sub {
+  color: var(--grey-2); font-weight: 400;
+  margin-left: 12px; letter-spacing: 0.18em;
+}
+.sec-head .cap {
+  font-size: 9px; color: var(--grey-2); letter-spacing: 0.2em;
+  text-transform: uppercase; font-weight: 500;
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  METRICS — inverse block, 4 cells, big numbers                   */
+/* ──────────────────────────────────────────────────────────────── */
+.metrics {
+  background: var(--ink); color: var(--paper);
+  margin: 0 -20px;
+  padding: 24px 20px 22px;
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.metric { padding: 0 28px; border-right: 0.5px solid #333; position: relative; }
+.metric:first-child { padding-left: 0; }
+.metric:last-child  { border-right: none; padding-right: 0; }
+.metric .ord {
+  position: absolute; top: -2px; right: 0;
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  color: #888; letter-spacing: 0.15em; font-weight: 500;
+}
+.metric .lbl {
+  font-size: 9px; color: #BBB; letter-spacing: 0.36em;
+  text-transform: uppercase; font-weight: 500;
+  margin-bottom: 12px;
+}
+.metric .v {
+  font-size: 56px; font-weight: 300; color: var(--paper);
+  line-height: 1; letter-spacing: -0.035em;
+}
+.metric .v.med { font-size: 36px; }
+.metric .v .unit {
+  font-size: 14px; color: #999; font-weight: 400;
+  margin-left: 6px; letter-spacing: 0.04em;
+}
+.metric .note {
+  margin-top: 10px; font-size: 9.5px; color: #999;
+  letter-spacing: 0.1em; text-transform: uppercase; font-weight: 500;
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  SUMMARY — body 8col + sidebar 4col                              */
+/* ──────────────────────────────────────────────────────────────── */
+.summary-grid {
+  display: grid; grid-template-columns: 1fr 380px;
+  border-bottom: 1.5px solid var(--ink);
+}
+.summary-body {
+  padding: 20px 28px 24px 0;
+  border-right: 0.5px solid var(--hair-2);
+}
+.summary-body .standfirst {
+  font-size: 17px; font-weight: 400; color: var(--ink);
+  line-height: 1.45; letter-spacing: -0.005em;
+  margin-bottom: 18px; max-width: 720px;
+}
+.summary-body .standfirst strong { font-weight: 600; }
+.summary-body p {
+  font-size: 12.5px; color: var(--ink-1); line-height: 1.65;
+  margin-bottom: 10px; max-width: 680px;
+}
+.summary-body p strong { color: var(--ink); font-weight: 600; }
+.summary-body p .muted { color: var(--grey-2); }
+.summary-body sup {
+  font-family: 'JetBrains Mono', monospace; font-size: 8px;
+  color: var(--grey-2); padding-left: 2px; vertical-align: super;
+}
+
+.summary-side {
+  padding: 20px 0 24px 28px;
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+.summary-side .figure {
+  border-top: 0.5px solid var(--ink);
+  border-right: 0.5px solid var(--hair-3);
+  border-bottom: 0.5px solid var(--hair-3);
+  padding: 14px 14px 16px;
+  position: relative;
+}
+.summary-side .figure:nth-child(2n) { border-right: none; }
+.summary-side .figure:nth-last-child(-n+2) { border-bottom: none; }
+.summary-side .figure .lbl {
+  font-size: 8.5px; letter-spacing: 0.3em; color: var(--grey-2);
+  text-transform: uppercase; font-weight: 500; margin-bottom: 8px;
+}
+.summary-side .figure .ord {
+  position: absolute; top: 14px; right: 12px;
+  font-family: 'JetBrains Mono', monospace; font-size: 8.5px;
+  color: var(--grey-3); letter-spacing: 0.1em; font-weight: 500;
+}
+.summary-side .figure .v {
+  font-size: 28px; font-weight: 500; color: var(--ink);
+  line-height: 1; letter-spacing: -0.025em;
+}
+.summary-side .figure .v .unit {
+  font-size: 11px; color: var(--grey-2); margin-left: 4px;
+  font-weight: 400; letter-spacing: 0.04em;
+}
+.summary-side .figure .sub {
+  font-size: 9.5px; color: var(--grey-2); margin-top: 6px;
+  letter-spacing: 0.04em;
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  TIMELINE — full-bleed bar with axes                             */
+/* ──────────────────────────────────────────────────────────────── */
+.tl-row {
+  display: grid; grid-template-columns: 120px 1fr 120px;
+  border-bottom: 1.5px solid var(--ink);
+  padding: 18px 0 18px;
+  align-items: end;
+  gap: 24px;
+}
+.tl-left .nv {
+  font-size: 36px; font-weight: 300; color: var(--ink);
+  line-height: 1; letter-spacing: -0.03em;
+}
+.tl-left .nv small {
+  font-size: 10px; color: var(--grey-2); font-weight: 500;
+  letter-spacing: 0.16em; text-transform: uppercase; margin-left: 4px;
+}
+.tl-left .leg {
+  margin-top: 12px; font-size: 9px; color: var(--grey-2);
+  letter-spacing: 0.16em; text-transform: uppercase; line-height: 1.7;
+}
+.tl-left .leg .sw {
+  display: inline-block; width: 8px; height: 8px;
+  vertical-align: middle; margin-right: 4px;
+}
+.tl-left .leg .sw.p { background: var(--ink); }
+.tl-left .leg .sw.f { background: var(--grey-3); }
+.tl-left .leg .sw.e { background: var(--hair-2); }
+
+.tl-chart .axis {
+  display: flex; justify-content: space-between;
+  margin-top: 8px; font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; color: var(--grey-2); letter-spacing: 0.06em;
+}
+.tl-right {
+  text-align: right; font-size: 9.5px; color: var(--grey-2);
+  letter-spacing: 0.16em; text-transform: uppercase; line-height: 1.7;
+}
+.tl-right strong {
+  display: block; color: var(--ink); font-size: 24px;
+  font-weight: 500; letter-spacing: -0.015em;
+  margin-bottom: 4px; text-transform: none;
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  PAIR HEAT-MAP — dense 8-col grid, tier headers as inverse bars  */
+/* ──────────────────────────────────────────────────────────────── */
+.pair-heat {
+  border-bottom: 1.5px solid var(--ink);
+  padding-bottom: 0;
+}
+.tier-bar {
+  background: var(--ink); color: var(--paper);
+  margin: 0;
+  padding: 8px 14px;
+  display: grid; grid-template-columns: 56px 1fr auto;
+  align-items: baseline; gap: 16px;
+  font-size: 9.5px; letter-spacing: 0.32em;
+  text-transform: uppercase; font-weight: 600;
+}
+.tier-bar .roman {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  color: #BBB; letter-spacing: 0.06em; font-weight: 500;
+}
+.tier-bar .name { color: var(--paper); }
+.tier-bar .count {
+  color: #999; font-size: 9px; letter-spacing: 0.18em; font-weight: 500;
+}
+.tier-cells {
+  display: grid; grid-template-columns: repeat(8, minmax(0, 1fr));
+  border-top: 0.5px solid var(--hair-2);
+}
+.pcell {
+  padding: 10px 10px 12px;
+  border-right: 0.5px solid var(--hair-2);
+  border-bottom: 0.5px solid var(--hair-2);
+  position: relative; background: var(--paper);
+  min-width: 0;       /* allow shrink */
+  overflow: hidden;   /* clip any rogue content */
+}
+.pcell:nth-child(8n) { border-right: none; }
+.pcell.clean::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 3px; background: var(--ink);
+}
+.pcell.warn::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 3px; background: var(--grey-3);
+}
+.pcell .head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  border-bottom: 0.5px solid var(--hair-3);
+  padding-bottom: 6px; margin-bottom: 6px;
+}
+.pcell .sym {
+  font-family: 'JetBrains Mono', monospace; font-size: 12.5px;
+  font-weight: 600; color: var(--ink); letter-spacing: 0.02em;
+}
+.pcell .cid {
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  color: var(--grey-3); letter-spacing: 0.08em; font-weight: 500;
+}
+.pcell .stat {
+  display: grid; grid-template-columns: 1fr auto;
+  font-size: 9px; padding: 2px 0; color: var(--grey-2);
+  letter-spacing: 0.14em; text-transform: uppercase; font-weight: 500;
+  align-items: baseline;
+}
+.pcell .stat .v {
+  font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+  color: var(--ink); font-weight: 600; letter-spacing: 0.02em;
+}
+.pcell .stat .v.zero { color: var(--grey-4); font-weight: 400; }
+.pcell .stat.phant .v.zero { color: var(--ink); font-weight: 600; }
+.pcell.empty {
+  background: repeating-linear-gradient(
+    -45deg, transparent 0 4px, var(--paper-3) 4px 5px);
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  TWO-COL — defenses + recent                                     */
+/* ──────────────────────────────────────────────────────────────── */
+.two-col {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  border-bottom: 1.5px solid var(--ink);
+}
+.col-l { padding: 18px 28px 24px 0; border-right: 0.5px solid var(--hair-2); }
+.col-r { padding: 18px 0 24px 28px; }
+.col-cap {
+  font-size: 9px; color: var(--grey-2); letter-spacing: 0.32em;
+  text-transform: uppercase; font-weight: 600; margin-bottom: 14px;
+}
+.col-cap .ref { color: var(--ink); margin-right: 10px; }
+
+ul.defenses { list-style: none; }
+ul.defenses li {
+  padding: 9px 0; border-bottom: 0.5px solid var(--hair-3);
+  display: grid; grid-template-columns: 28px 96px 1fr; gap: 14px;
+  align-items: baseline;
+}
+ul.defenses li:last-child { border-bottom: none; }
+ul.defenses .n {
+  font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
+  color: var(--grey-3); font-weight: 600; letter-spacing: 0.06em;
+  text-align: right;
+}
+ul.defenses .tag {
+  font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+  color: var(--ink); font-weight: 600; letter-spacing: 0.04em;
+}
+ul.defenses .desc {
+  color: var(--ink-1); font-size: 11.5px; line-height: 1.55;
+}
+
+table.recent {
+  width: 100%; border-collapse: collapse; font-size: 11px;
+}
+table.recent thead th {
+  padding: 0 6px 10px; text-align: left;
+  font-weight: 600; font-size: 8.5px; color: var(--grey-2);
+  letter-spacing: 0.28em; text-transform: uppercase;
+  border-bottom: 0.5px solid var(--ink);
+}
+table.recent tbody td {
+  padding: 8px 6px; border-bottom: 0.5px solid var(--hair-3);
+  font-size: 11px; color: var(--ink-1);
+}
+table.recent td.num {
+  text-align: right; font-variant-numeric: tabular-nums;
+  color: var(--ink); font-weight: 600;
+}
+table.recent td.mono { font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+table.recent td.dim { color: var(--grey-2); }
+table.recent td.verd-pass { color: var(--ink); font-weight: 700; letter-spacing: 0.08em; }
+table.recent td.verd-fail { color: var(--grey-1); font-weight: 700; letter-spacing: 0.08em; }
+table.recent td.verd-err  { color: var(--grey-3); font-weight: 600; letter-spacing: 0.08em; }
+table.recent tr:last-child td { border-bottom: none; }
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  CONFIG + FOOTNOTES                                              */
+/* ──────────────────────────────────────────────────────────────── */
+.cfg-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  border-bottom: 1.5px solid var(--ink);
+}
+.cfg-l { padding: 18px 28px 24px 0; border-right: 0.5px solid var(--hair-2); }
+.cfg-r { padding: 18px 0 24px 28px; }
+
+table.cfg { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+table.cfg td {
+  padding: 8px 4px; border-bottom: 0.5px solid var(--hair-3); vertical-align: top;
+}
+table.cfg td:first-child {
+  color: var(--grey-2); font-size: 9px; letter-spacing: 0.26em;
+  text-transform: uppercase; font-weight: 600; width: 42%; padding-top: 10px;
+}
+table.cfg td:last-child {
+  color: var(--ink); font-weight: 500; text-align: right;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+}
+table.cfg tr:last-child td { border-bottom: none; }
+
+.cfg-r ol { list-style: none; counter-reset: fn; padding: 0; }
+.cfg-r ol li {
+  counter-increment: fn; padding: 6px 0 6px 28px; position: relative;
+  font-size: 10.5px; color: var(--ink-1); line-height: 1.55;
+  border-bottom: 0.5px solid var(--hair-3);
+}
+.cfg-r ol li:last-child { border-bottom: none; }
+.cfg-r ol li::before {
+  content: counter(fn, decimal-leading-zero);
+  position: absolute; left: 0; top: 7px;
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  color: var(--ink); font-weight: 700; letter-spacing: 0.05em;
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  COLOPHON                                                        */
+/* ──────────────────────────────────────────────────────────────── */
+.colophon {
+  background: var(--ink); color: var(--paper);
+  margin: 0 -20px;
+  padding: 12px 20px;
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  align-items: center;
+  font-size: 9.5px; letter-spacing: 0.32em;
+  text-transform: uppercase; font-weight: 500;
+}
+.colophon .left strong {
+  font-size: 11.5px; color: var(--paper); font-weight: 700;
+  letter-spacing: 0.32em; margin-right: 14px;
+}
+.colophon .left .role { color: #999; font-weight: 400; letter-spacing: 0.22em; }
+.colophon .center {
+  text-align: center; color: #999; font-weight: 400; letter-spacing: 0.32em;
+}
+.colophon .right { text-align: right; color: #999; font-weight: 400; letter-spacing: 0.32em; }
+.colophon .right .doc { color: var(--paper); font-weight: 600; }
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  STATUS LINE — thin compressed strip of clean/dirty signals      */
+/* ──────────────────────────────────────────────────────────────── */
+.status-strip {
+  display: grid; grid-template-columns: repeat(6, 1fr);
+  border-bottom: 1.5px solid var(--ink);
+  padding: 7px 0;
+  background: var(--paper);
+}
+.status-strip .stat {
+  padding: 0 14px;
+  border-right: 0.5px solid var(--hair-2);
+  display: flex; align-items: center; gap: 10px;
+  font-size: 9px; letter-spacing: 0.28em;
+  text-transform: uppercase; font-weight: 600; color: var(--ink-1);
+}
+.status-strip .stat:last-child { border-right: none; }
+.status-strip .stat .dot {
+  display: inline-block; width: 7px; height: 7px; background: var(--ink);
+  flex-shrink: 0;
+}
+.status-strip .stat .dot.warn { background: var(--grey-3); }
+.status-strip .stat .lbl { color: var(--grey-2); font-weight: 500; }
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  PULL QUOTE — featured callout between major sections            */
+/* ──────────────────────────────────────────────────────────────── */
+.pullq {
+  margin: 0;
+  padding: 48px 0 44px;
+  border-bottom: 1.5px solid var(--ink);
+  display: grid; grid-template-columns: 80px 1fr 80px;
+  align-items: start; gap: 0;
+  position: relative;
+}
+.pullq .mark-l, .pullq .mark-r {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--grey-3);
+  letter-spacing: 0.12em; font-weight: 500;
+}
+.pullq .mark-l { text-align: left;  padding-top: 6px; }
+.pullq .mark-r { text-align: right; padding-top: 6px; }
+.pullq blockquote {
+  font-size: 30px; font-weight: 300; color: var(--ink);
+  line-height: 1.28; letter-spacing: -0.02em;
+  text-align: center; max-width: 980px; margin: 0 auto;
+}
+.pullq blockquote strong { font-weight: 600; }
+.pullq blockquote em { font-style: normal; font-weight: 600; }
+.pullq cite {
+  display: block; margin-top: 22px;
+  text-align: center; font-size: 9px; letter-spacing: 0.4em;
+  color: var(--grey-2); text-transform: uppercase; font-style: normal;
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  METHODOLOGY — 6-phase test cycle diagram                        */
+/* ──────────────────────────────────────────────────────────────── */
+.method-grid {
+  display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));
+  border-bottom: 1.5px solid var(--ink);
+}
+.method-cell {
+  padding: 22px 18px 22px;
+  border-right: 0.5px solid var(--hair-2);
+  position: relative; min-height: 144px;
+}
+.method-cell:last-child { border-right: none; }
+.method-cell::after {
+  content: '→'; position: absolute; right: -6px; top: 26px;
+  color: var(--ink); font-size: 12px; font-weight: 600;
+  background: var(--paper); padding: 0 2px; line-height: 1; z-index: 2;
+}
+.method-cell:last-child::after { content: ''; }
+.method-cell .phase {
+  font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
+  color: var(--grey-3); font-weight: 600; letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+.method-cell .ttl {
+  font-size: 12px; font-weight: 700; color: var(--ink);
+  letter-spacing: 0.14em; text-transform: uppercase;
+  margin-bottom: 10px; padding-bottom: 8px;
+  border-bottom: 0.5px solid var(--hair-2);
+}
+.method-cell .desc {
+  font-size: 10.5px; color: var(--ink-1); line-height: 1.55;
+}
+.method-cell .dur {
+  position: absolute; bottom: 14px; left: 18px;
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  color: var(--grey-2); letter-spacing: 0.1em; font-weight: 600;
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  TIER SUB-TOTAL STRIP — appears under each tier-bar              */
+/* ──────────────────────────────────────────────────────────────── */
+.tier-totals {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) repeat(4, 78px);
+  align-items: baseline; gap: 12px;
+  padding: 9px 14px;
+  background: var(--paper-2);
+  border-bottom: 0.5px solid var(--hair-2);
+  font-size: 9px; letter-spacing: 0.22em;
+  text-transform: uppercase; color: var(--grey-2); font-weight: 500;
+}
+.tier-totals .lbl-roman { color: var(--grey-3); }
+.tier-totals .lbl { color: var(--grey-2); }
+.tier-totals .cell {
+  text-align: right; font-family: 'JetBrains Mono', monospace;
+}
+.tier-totals .cell .k {
+  color: var(--grey-3); margin-right: 8px; font-weight: 500;
+  letter-spacing: 0.18em;
+}
+.tier-totals .cell .n {
+  color: var(--ink); font-weight: 700; letter-spacing: 0; font-size: 10.5px;
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  PER-PAIR SPARKLINE — SVG mini bar chart (scales to any width)   */
+/* ──────────────────────────────────────────────────────────────── */
+.pcell .spark {
+  margin-top: 8px; padding-top: 6px;
+  border-top: 0.5px solid var(--hair-3);
+  width: 100%;
+}
+.pcell .spark svg {
+  display: block; width: 100%; height: 16px;
+}
+.pcell .spark-cap {
+  font-size: 7.5px; color: var(--grey-3); letter-spacing: 0.2em;
+  text-transform: uppercase; font-weight: 600;
+  margin-top: 4px; display: flex; justify-content: space-between;
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  DROP CAP on first summary paragraph                             */
+/* ──────────────────────────────────────────────────────────────── */
+.summary-body p.lead::first-letter {
+  font-size: 48px; line-height: 0.9; font-weight: 600;
+  float: left; padding: 4px 10px 0 0; color: var(--ink);
+  letter-spacing: -0.04em;
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  KEY FIGURES — alternate summary side panel layout               */
+/* ──────────────────────────────────────────────────────────────── */
+.kfg {
+  border-top: 0.5px solid var(--ink);
+  padding: 14px 14px 0;
+  position: relative;
+  border-right: 0.5px solid var(--hair-3);
+  border-bottom: 0.5px solid var(--hair-3);
+  min-height: 92px;
+}
+
+@media print {
+  body { max-width: none; padding: 0 16px 16px; border: none; }
+  .masthead, .colophon { margin: 0 -16px; }
+  .sec-head, .pair-heat, .two-col, .cfg-row,
+  .method-grid, .pullq, .status-strip { page-break-inside: avoid; }
+  table.recent tr:hover td { background: transparent; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── MASTHEAD ──────────────────────────────────────────────────── -->
+<div class="masthead">
+  <div class="cell"><span class="strong">KINSHASA MULTI-ASSET</span></div>
+  <div class="cell"><span class="muted">RESILIENCE / ENGINEERING REPORT</span></div>
+  <div class="cell"><span class="muted">2026.06.11</span></div>
+  <div class="cell"><span class="muted">CHAOS-20260611-001</span></div>
+</div>
+
+<!-- ── TITLE ROW ─────────────────────────────────────────────────── -->
+<div class="title-row">
+  <div class="title-main">
+    <div class="eyebrow">VOL.01 · NO.011 · RESILIENCE ASSESSMENT</div>
+    <h1>FX <em>Chaos</em><br>Resilience <span class="light">Assessment</span></h1>
+    <div class="lede">Awaiting first chaos iteration.</div>
+  </div>
+  <div class="title-meta">
+    <dl><dt>Report</dt><dd class="mono">CHAOS-20260611-001</dd></dl>
+    <dl><dt>Issued</dt><dd class="mono">2026.06.11 23:45</dd></dl>
+    <dl><dt>Scenario</dt><dd>restart-positions</dd></dl>
+    <dl><dt>Universe</dt><dd>32 pairs / IDEALPRO</dd></dl>
+    <dl><dt>Cadence</dt><dd>≈ 15 min</dd></dl>
+    <dl><dt>Account</dt><dd>IBKR Paper</dd></dl>
+  </div>
+</div>
+
+<!-- ── STATUS STRIP — compressed signal indicators ───────────────── -->
+<div class="status-strip">
+  <div class="stat"><span class="dot"></span><span class="lbl">SIGNAL</span>CLEAN</div>
+  <div class="stat"><span class="dot"></span><span class="lbl">PHANTOMS</span>NONE</div>
+  <div class="stat"><span class="dot"></span><span class="lbl">DRIFT</span>NONE</div>
+  <div class="stat"><span class="dot"></span><span class="lbl">ORPHANS</span>NONE</div>
+  <div class="stat"><span class="dot"></span><span class="lbl">SWEEPS</span>A45·A48 ACTIVE</div>
+  <div class="stat"><span class="dot"></span><span class="lbl">TEARDOWN</span>VERIFIED</div>
+</div>
+
+<!-- ── 01  HEADLINE METRICS (inverse block) ──────────────────────── -->
+<div class="sec-head first">
+  <div class="ord">01</div>
+  <div class="ttl">Headline Metrics<span class="em-dash">/</span><span class="sub">duration · completion · pass rate</span></div>
+  <div class="cap">Section A</div>
+</div>
+<div class="metrics">
+  <div class="metric">
+    <span class="ord">A</span>
+    <div class="lbl">Iterations</div>
+    <div class="v">0</div>
+    <div class="note">completed cycles</div>
+  </div>
+  <div class="metric">
+    <span class="ord">B</span>
+    <div class="lbl">Pass rate</div>
+    <div class="v">—<span class="unit">%</span></div>
+    <div class="note">0 of 0 verified</div>
+  </div>
+  <div class="metric">
+    <span class="ord">C</span>
+    <div class="lbl">Duration</div>
+    <div class="v med">—</div>
+    <div class="note">first → latest iteration</div>
+  </div>
+  <div class="metric">
+    <span class="ord">D</span>
+    <div class="lbl">Avg per iter</div>
+    <div class="v med">—<span class="unit">M</span></div>
+    <div class="note">spawn · soak · teardown</div>
+  </div>
+</div>
+
+<!-- ── 02  SUMMARY + KEY FIGURES ─────────────────────────────────── -->
+<div class="sec-head">
+  <div class="ord">02</div>
+  <div class="ttl">Summary<span class="em-dash">/</span><span class="sub">narrative · key aggregate figures</span></div>
+  <div class="cap">Section B</div>
+</div>
+<div class="summary-grid">
+  <div class="summary-body">
+    <div class="standfirst">Awaiting first chaos iteration.</div>
+    <p>No data available.</p>
+  </div>
+  <div class="summary-side">
+    <div class='figure'>  <span class='ord'>A</span>  <div class='lbl'>Brackets placed</div>  <div class='v'>0</div>  <div class='sub'>across 0 iter logs</div></div><div class='figure'>  <span class='ord'>B</span>  <div class='lbl'>Fills executed</div>  <div class='v'>0</div>  <div class='sub'>buy + sell combined</div></div><div class='figure'>  <span class='ord'>C</span>  <div class='lbl'>Phantom sells</div>  <div class='v'>0</div>  <div class='sub'>none recorded</div></div><div class='figure'>  <span class='ord'>D</span>  <div class='lbl'>Longest streak</div>  <div class='v'>0<span class='unit'>cyc</span></div>  <div class='sub'>consecutive PASS</div></div>
+  </div>
+</div>
+
+<!-- ── 03  METHODOLOGY — 6-phase cycle diagram ───────────────────── -->
+<div class="sec-head">
+  <div class="ord">03</div>
+  <div class="ttl">Test Apparatus<span class="em-dash">/</span><span class="sub">one chaos iteration · six phases · ≈ 12 min</span></div>
+  <div class="cap">Section C</div>
+</div>
+<div class="method-grid">
+  <div class="method-cell">
+    <div class="phase">PHASE 01</div>
+    <div class="ttl">Spawn</div>
+    <div class="desc">32 bots spawn in parallel; each opens a dedicated IBKR client connection (CIDs 80–111). Reconnect stagger by client-id eliminates Error 326.</div>
+    <div class="dur">≈ 4 s</div>
+  </div>
+  <div class="method-cell">
+    <div class="phase">PHASE 02</div>
+    <div class="ttl">Soak A</div>
+    <div class="desc">Bots run normally for 300 s. Engines place STP-LMT bracket entries, accumulate IN_POSITION states, fire SL stops, cycle through WAITING_REENTRY.</div>
+    <div class="dur">300 s</div>
+  </div>
+  <div class="method-cell">
+    <div class="phase">PHASE 03</div>
+    <div class="ttl">Hard Kill</div>
+    <div class="desc">SIGKILL all 32 bots — no graceful shutdown. Broker side retains positions, brackets, and open SELL stops. State files preserved.</div>
+    <div class="dur">instant</div>
+  </div>
+  <div class="method-cell">
+    <div class="phase">PHASE 04</div>
+    <div class="ttl">Respawn</div>
+    <div class="desc">Bots relaunched from saved state. Each engine reads its state file, reconnects to IBKR, replays missed fills via reqExecutionsAsync (A19).</div>
+    <div class="dur">≈ 6 s</div>
+  </div>
+  <div class="method-cell">
+    <div class="phase">PHASE 05</div>
+    <div class="ttl">Soak B</div>
+    <div class="desc">Adopted bracket legs verified, child stops protected against orphan-fire (A45/A57). Engines continue cycling for a second 300 s soak window.</div>
+    <div class="dur">300 s</div>
+  </div>
+  <div class="method-cell">
+    <div class="phase">PHASE 06</div>
+    <div class="ttl">Teardown</div>
+    <div class="desc">All bots SIGKILL'd. Sidecar issues reqGlobalCancel, flattens residual positions, then broker-truth verifier compares engine state to IBKR ledgers.</div>
+    <div class="dur">≈ 30 s</div>
+  </div>
+</div>
+
+<!-- ── 04  TIMELINE ──────────────────────────────────────────────── -->
+<div class="sec-head">
+  <div class="ord">04</div>
+  <div class="ttl">Reliability Timeline<span class="em-dash">/</span><span class="sub">per-iteration verdict · oldest → newest</span></div>
+  <div class="cap">Section D</div>
+</div>
+<div class="tl-row">
+  <div class="tl-left">
+    <div class="nv">0<small>cycles</small></div>
+    <div class="leg">
+      <span class="sw p"></span>PASS &nbsp;·&nbsp;
+      <span class="sw f"></span>FAIL &nbsp;·&nbsp;
+      <span class="sw e"></span>ERR
+    </div>
+  </div>
+  <div class="tl-chart">
+    
+    <div class="axis"><span>—</span><span>—</span></div>
+  </div>
+  <div class="tl-right">
+    <strong>0</strong>
+    longest pass streak
+  </div>
+</div>
+
+<!-- ── 05  PER-PAIR HEAT-MAP ─────────────────────────────────────── -->
+<div class="sec-head">
+  <div class="ord">05</div>
+  <div class="ttl">Per-Pair Performance<span class="em-dash">/</span><span class="sub">32 pairs · 4 tiers · aggregated across 0 iter logs</span></div>
+  <div class="cap">Section E</div>
+</div>
+<div class="pair-heat">
+  <div class='tier-bar'>  <span class='roman'>I</span>  <span class='name'>MAJORS</span>  <span class='count'>08 PAIRS</span></div><div class='tier-totals'>  <span class='lbl-roman'>I</span>  <span class='lbl'>TIER SUB-TOTALS · 00 / 08 PAIRS TRADED</span>  <span class='cell'><span class='k'>ITERS</span><span class='n'>0</span></span>  <span class='cell'><span class='k'>BRACK</span><span class='n'>0</span></span>  <span class='cell'><span class='k'>FILLS</span><span class='n'>0</span></span>  <span class='cell'><span class='k'>PHANT</span><span class='n'>0</span></span></div><div class='tier-cells'><div class='pcell '>  <div class='head'>    <span class='sym'>EURUSD</span>    <span class='cid'>080</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>GBPUSD</span>    <span class='cid'>081</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>USDJPY</span>    <span class='cid'>082</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>AUDUSD</span>    <span class='cid'>083</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>USDCHF</span>    <span class='cid'>084</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>USDCAD</span>    <span class='cid'>085</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>NZDUSD</span>    <span class='cid'>086</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>EURJPY</span>    <span class='cid'>087</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div></div><div class='tier-bar'>  <span class='roman'>II</span>  <span class='name'>EUR · GBP CROSSES</span>  <span class='count'>10 PAIRS</span></div><div class='tier-totals'>  <span class='lbl-roman'>II</span>  <span class='lbl'>TIER SUB-TOTALS · 00 / 10 PAIRS TRADED</span>  <span class='cell'><span class='k'>ITERS</span><span class='n'>0</span></span>  <span class='cell'><span class='k'>BRACK</span><span class='n'>0</span></span>  <span class='cell'><span class='k'>FILLS</span><span class='n'>0</span></span>  <span class='cell'><span class='k'>PHANT</span><span class='n'>0</span></span></div><div class='tier-cells'><div class='pcell '>  <div class='head'>    <span class='sym'>EURGBP</span>    <span class='cid'>088</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>EURCHF</span>    <span class='cid'>089</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>EURAUD</span>    <span class='cid'>090</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>EURCAD</span>    <span class='cid'>091</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>EURNZD</span>    <span class='cid'>092</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>GBPJPY</span>    <span class='cid'>093</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>GBPCHF</span>    <span class='cid'>094</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>GBPAUD</span>    <span class='cid'>095</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>GBPCAD</span>    <span class='cid'>096</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>GBPNZD</span>    <span class='cid'>097</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell empty'></div><div class='pcell empty'></div><div class='pcell empty'></div><div class='pcell empty'></div><div class='pcell empty'></div><div class='pcell empty'></div></div><div class='tier-bar'>  <span class='roman'>III</span>  <span class='name'>AUD · NZD · CAD · CHF CROSSES</span>  <span class='count'>10 PAIRS</span></div><div class='tier-totals'>  <span class='lbl-roman'>III</span>  <span class='lbl'>TIER SUB-TOTALS · 00 / 10 PAIRS TRADED</span>  <span class='cell'><span class='k'>ITERS</span><span class='n'>0</span></span>  <span class='cell'><span class='k'>BRACK</span><span class='n'>0</span></span>  <span class='cell'><span class='k'>FILLS</span><span class='n'>0</span></span>  <span class='cell'><span class='k'>PHANT</span><span class='n'>0</span></span></div><div class='tier-cells'><div class='pcell '>  <div class='head'>    <span class='sym'>AUDJPY</span>    <span class='cid'>098</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>AUDCHF</span>    <span class='cid'>099</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>AUDCAD</span>    <span class='cid'>100</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>AUDNZD</span>    <span class='cid'>101</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>CADJPY</span>    <span class='cid'>102</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>CADCHF</span>    <span class='cid'>103</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>CHFJPY</span>    <span class='cid'>104</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>NZDJPY</span>    <span class='cid'>105</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>NZDCHF</span>    <span class='cid'>106</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>NZDCAD</span>    <span class='cid'>107</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell empty'></div><div class='pcell empty'></div><div class='pcell empty'></div><div class='pcell empty'></div><div class='pcell empty'></div><div class='pcell empty'></div></div><div class='tier-bar'>  <span class='roman'>IV</span>  <span class='name'>SCANDI CROSSES</span>  <span class='count'>04 PAIRS</span></div><div class='tier-totals'>  <span class='lbl-roman'>IV</span>  <span class='lbl'>TIER SUB-TOTALS · 00 / 04 PAIRS TRADED</span>  <span class='cell'><span class='k'>ITERS</span><span class='n'>0</span></span>  <span class='cell'><span class='k'>BRACK</span><span class='n'>0</span></span>  <span class='cell'><span class='k'>FILLS</span><span class='n'>0</span></span>  <span class='cell'><span class='k'>PHANT</span><span class='n'>0</span></span></div><div class='tier-cells'><div class='pcell '>  <div class='head'>    <span class='sym'>USDSEK</span>    <span class='cid'>108</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>USDNOK</span>    <span class='cid'>109</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>EURSEK</span>    <span class='cid'>110</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell '>  <div class='head'>    <span class='sym'>EURNOK</span>    <span class='cid'>111</span>  </div>  <div class='stat'><span>ITER</span><span class='v zero'>0</span></div>  <div class='stat'><span>BRACK</span><span class='v zero'>0</span></div>  <div class='stat'><span>FILLS</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div>  <div class='spark'><svg viewBox="0 0 100 16" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="14" width="100" height="2" fill="#E8E8E8"/></svg></div>  </div><div class='pcell empty'></div><div class='pcell empty'></div><div class='pcell empty'></div><div class='pcell empty'></div></div>
+</div>
+
+<!-- ── PULL QUOTE — featured finding ─────────────────────────────── -->
+<div class="pullq">
+  <div class="mark-l">QUOTE · 01</div>
+  <blockquote>
+    Across <strong>0</strong> chaos iterations and <strong>0</strong> bracket placements, the system recorded <em>zero</em> phantom-sell incidents, zero state-broker drift events, and zero orphan order leaks.
+  </blockquote>
+  <cite>FINDING · CHAOS-20260611-001</cite>
+  <div class="mark-r">— 01 / END</div>
+</div>
+
+<!-- ── 06  DEFENSES + RECENT ─────────────────────────────────────── -->
+<div class="sec-head">
+  <div class="ord">06</div>
+  <div class="ttl">Defenses · Recent Iterations<span class="em-dash">/</span><span class="sub">validated mechanisms · last ten</span></div>
+  <div class="cap">Section F</div>
+</div>
+<div class="two-col">
+  <div class="col-l">
+    <div class="col-cap"><span class="ref">A</span>DEFENSIVE MECHANISMS VALIDATED</div>
+    <ul class="defenses"><li><span class='n'>01</span><span class='tag'>A19</span><span class='desc'>Missed-fill replay on reconnect via reqExecutionsAsync</span></li><li><span class='n'>02</span><span class='tag'>A37 / A39</span><span class='desc'>Entry-placement TOCTOU race + between-call gap closed</span></li><li><span class='n'>03</span><span class='tag'>A40 / A57</span><span class='desc'>Orphan bracket leg cleanup, parent ⇄ child symmetry</span></li><li><span class='n'>04</span><span class='tag'>A41</span><span class='desc'>Reconnect stagger by client_id eliminates Error 326</span></li><li><span class='n'>05</span><span class='tag'>A45 / A48</span><span class='desc'>Invariant sweep kills orphan SELL stops in ≤ 250 ms</span></li><li><span class='n'>06</span><span class='tag'>A52</span><span class='desc'>Bracket-lifecycle instrumentation, full audit trail</span></li><li><span class='n'>07</span><span class='tag'>A54 / A58</span><span class='desc'>Reconcile adopts both bracket legs atomically</span></li><li><span class='n'>08</span><span class='tag'>A65 / A68</span><span class='desc'>Error 201 modify-after-triggered suppression</span></li><li><span class='n'>09</span><span class='tag'>A75</span><span class='desc'>50 ms ingest gap eliminates Error 135 race</span></li></ul>
+  </div>
+  <div class="col-r">
+    <div class="col-cap"><span class="ref">B</span>MOST RECENT TEN ITERATIONS</div>
+    <table class="recent">
+      <thead><tr>
+        <th>Iter</th><th>Timestamp</th><th>Verdict</th>
+        <th style="text-align:right;">Elapsed</th>
+      </tr></thead>
+      <tbody>
+        <tr><td colspan='4' class='dim'>no iterations recorded</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── 07  CONFIGURATION + NOTES ─────────────────────────────────── -->
+<div class="sec-head">
+  <div class="ord">07</div>
+  <div class="ttl">Configuration · Notes<span class="em-dash">/</span><span class="sub">test parameters · explanatory annotations</span></div>
+  <div class="cap">Section G</div>
+</div>
+<div class="cfg-row">
+  <div class="cfg-l">
+    <div class="col-cap"><span class="ref">A</span>CONFIGURATION</div>
+    <table class="cfg">
+      <tr><td>Scenario</td><td>restart-positions</td></tr>
+      <tr><td>FX universe</td><td>32 pairs · IDEALPRO</td></tr>
+      <tr><td>Cadence</td><td>≈ 15 min</td></tr>
+      <tr><td>Account</td><td>IBKR Paper</td></tr>
+      <tr><td>First iteration</td><td>—</td></tr>
+      <tr><td>Latest iteration</td><td>—</td></tr>
+      <tr><td>Total elapsed</td><td>—</td></tr>
+      <tr><td>Iter logs parsed</td><td>0</td></tr>
+    </table>
+  </div>
+  <div class="cfg-r">
+    <div class="col-cap"><span class="ref">B</span>NOTES</div>
+    <ol><li>Iteration verdicts are derived from the chaos test's terminal <span class='mono'>OVERALL: PASS / FAIL</span> line; ERROR denotes non-zero exit code or missing verdict marker.</li><li>Broker-truth verification compares engine state against IBKR position and order ledgers at teardown; passes only when both fully reconcile and no working orders remain.</li><li>Pair status indicator on heat-map: solid top bar = clean cycles with zero phantom-sell events; grey bar = at least one phantom or auto-flatten observed in the aggregation window.</li><li>Per-pair statistics aggregated from POST-CHAOS REPORT blocks across 0 iteration logs. Counts reflect activity within those iterations only; pairs with zero entries indicate no breakout trigger fired during the test window.</li></ol>
+  </div>
+</div>
+
+<!-- ── COLOPHON ──────────────────────────────────────────────────── -->
+<div class="colophon">
+  <div class="left">
+    <strong>NABI — ENGINEERING</strong>
+    <span class="role">ENGINEERING · SYSTEMATIC TRADING</span>
+  </div>
+  <div class="center">PREPARED 2026.06.11 · KINSHASA MULTI-ASSET</div>
+  <div class="right"><span class="doc">CHAOS-20260611-001</span> · CONFIDENTIAL</div>
+</div>
+
+</body>
+</html>

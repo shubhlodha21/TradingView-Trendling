@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>US Equity Order-Audit Report — AUDIT-20260611-001</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink:     #000;
+  --ink-1:   #111;
+  --ink-2:   #222;
+  --grey-1:  #3F3F3F;
+  --grey-2:  #6B6B6B;
+  --grey-3:  #999;
+  --grey-4:  #BABABA;
+  --hair-1:  #1A1A1A;
+  --hair-2:  #CFCFCF;
+  --hair-3:  #E8E8E8;
+  --paper:   #FFFFFF;
+  --paper-2: #F4F4F4;
+  --paper-3: #EFEFEF;
+}
+html { background: var(--paper); overflow-x: hidden; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-weight: 400; font-size: 12.5px; line-height: 1.5;
+  letter-spacing: 0.005em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-variant-numeric: tabular-nums lining-nums;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 20px 20px;
+  border-left:  0.5px solid var(--hair-2);
+  border-right: 0.5px solid var(--hair-2);
+  overflow-x: hidden;
+}
+.mono { font-family: 'JetBrains Mono', 'Menlo', monospace; }
+.num  { font-variant-numeric: tabular-nums lining-nums; }
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  MASTHEAD — inverse bar, full bleed                              */
+/* ──────────────────────────────────────────────────────────────── */
+.masthead {
+  background: var(--ink); color: var(--paper);
+  margin: 0 -20px;
+  padding: 9px 20px;
+  display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
+  font-size: 9.5px; letter-spacing: 0.32em; font-weight: 500;
+  text-transform: uppercase;
+}
+.masthead .cell { padding: 0 18px; border-right: 0.5px solid #444; }
+.masthead .cell:first-child { padding-left: 0; }
+.masthead .cell:last-child  { border-right: none; padding-right: 0; text-align: right; }
+.masthead .strong { color: var(--paper); font-weight: 600; letter-spacing: 0.4em; }
+.masthead .muted  { color: #999; font-weight: 400; }
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  TITLE ROW — display title + metadata panel                      */
+/* ──────────────────────────────────────────────────────────────── */
+.title-row {
+  display: grid; grid-template-columns: 1fr 280px;
+  border-bottom: 1.5px solid var(--ink);
+}
+.title-main {
+  padding: 36px 28px 32px 0;
+  border-right: 0.5px solid var(--hair-2);
+}
+.title-main .eyebrow {
+  font-size: 9.5px; letter-spacing: 0.42em; color: var(--ink);
+  font-weight: 600; text-transform: uppercase;
+  display: flex; gap: 12px; align-items: center; margin-bottom: 24px;
+}
+.title-main .eyebrow::before {
+  content: ''; display: inline-block; width: 28px; height: 1px;
+  background: var(--ink);
+}
+.title-main h1 {
+  font-size: 64px; font-weight: 500; color: var(--ink);
+  line-height: 0.98; letter-spacing: -0.035em;
+  margin-bottom: 24px;
+}
+.title-main h1 em {
+  font-style: normal; font-weight: 700;
+}
+.title-main h1 .light { font-weight: 300; }
+.title-main .lede {
+  font-size: 15px; color: var(--grey-1); font-weight: 400;
+  line-height: 1.5; max-width: 720px;
+  border-top: 0.5px solid var(--hair-2);
+  padding-top: 16px;
+}
+.title-meta {
+  padding: 36px 0 32px 28px;
+  display: grid; grid-template-columns: 1fr; align-content: start;
+  row-gap: 0;
+}
+.title-meta dl {
+  padding: 8px 0;
+  border-bottom: 0.5px solid var(--hair-3);
+  display: grid; grid-template-columns: 1fr 1.4fr;
+  align-items: baseline; column-gap: 8px;
+}
+.title-meta dl:first-child { padding-top: 0; }
+.title-meta dl:last-child  { border-bottom: none; }
+.title-meta dt {
+  font-size: 8.5px; color: var(--grey-2);
+  letter-spacing: 0.28em; text-transform: uppercase; font-weight: 500;
+}
+.title-meta dd {
+  font-size: 11px; color: var(--ink); font-weight: 500;
+  letter-spacing: 0.04em; text-align: right;
+}
+.title-meta dd.mono { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; }
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  SECTION HEADER STRIP                                            */
+/*  Format: [NN] -- TITLE ............ MICRO-CAPTION                */
+/* ──────────────────────────────────────────────────────────────── */
+.sec-head {
+  display: grid; grid-template-columns: 56px 1fr auto;
+  align-items: baseline; gap: 16px;
+  padding: 10px 0 10px;
+  border-bottom: 0.5px solid var(--ink);
+  margin-top: 0;
+}
+.sec-head.first { border-top: none; }
+.sec-head .ord {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 600; color: var(--ink);
+  letter-spacing: 0.06em;
+}
+.sec-head .ttl {
+  font-size: 10.5px; font-weight: 600; color: var(--ink);
+  letter-spacing: 0.32em; text-transform: uppercase;
+}
+.sec-head .ttl .em-dash {
+  color: var(--grey-3); margin: 0 10px; font-weight: 400;
+}
+.sec-head .ttl .sub {
+  color: var(--grey-2); font-weight: 400;
+  margin-left: 12px; letter-spacing: 0.18em;
+}
+.sec-head .cap {
+  font-size: 9px; color: var(--grey-2); letter-spacing: 0.2em;
+  text-transform: uppercase; font-weight: 500;
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  METRICS — inverse block, 4 cells, big numbers                   */
+/* ──────────────────────────────────────────────────────────────── */
+.metrics {
+  background: var(--ink); color: var(--paper);
+  margin: 0 -20px;
+  padding: 24px 20px 22px;
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.metric { padding: 0 28px; border-right: 0.5px solid #333; position: relative; }
+.metric:first-child { padding-left: 0; }
+.metric:last-child  { border-right: none; padding-right: 0; }
+.metric .ord {
+  position: absolute; top: -2px; right: 0;
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  color: #888; letter-spacing: 0.15em; font-weight: 500;
+}
+.metric .lbl {
+  font-size: 9px; color: #BBB; letter-spacing: 0.36em;
+  text-transform: uppercase; font-weight: 500;
+  margin-bottom: 12px;
+}
+.metric .v {
+  font-size: 56px; font-weight: 300; color: var(--paper);
+  line-height: 1; letter-spacing: -0.035em;
+}
+.metric .v.med { font-size: 36px; }
+.metric .v .unit {
+  font-size: 14px; color: #999; font-weight: 400;
+  margin-left: 6px; letter-spacing: 0.04em;
+}
+.metric .note {
+  margin-top: 10px; font-size: 9.5px; color: #999;
+  letter-spacing: 0.1em; text-transform: uppercase; font-weight: 500;
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  SUMMARY — body 8col + sidebar 4col                              */
+/* ──────────────────────────────────────────────────────────────── */
+.summary-grid {
+  display: grid; grid-template-columns: 1fr 380px;
+  border-bottom: 1.5px solid var(--ink);
+}
+.summary-body {
+  padding: 20px 28px 24px 0;
+  border-right: 0.5px solid var(--hair-2);
+}
+.summary-body .standfirst {
+  font-size: 17px; font-weight: 400; color: var(--ink);
+  line-height: 1.45; letter-spacing: -0.005em;
+  margin-bottom: 18px; max-width: 720px;
+}
+.summary-body .standfirst strong { font-weight: 600; }
+.summary-body p {
+  font-size: 12.5px; color: var(--ink-1); line-height: 1.65;
+  margin-bottom: 10px; max-width: 680px;
+}
+.summary-body p strong { color: var(--ink); font-weight: 600; }
+.summary-body p .muted { color: var(--grey-2); }
+.summary-body sup {
+  font-family: 'JetBrains Mono', monospace; font-size: 8px;
+  color: var(--grey-2); padding-left: 2px; vertical-align: super;
+}
+
+.summary-side {
+  padding: 20px 0 24px 28px;
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+.summary-side .figure {
+  border-top: 0.5px solid var(--ink);
+  border-right: 0.5px solid var(--hair-3);
+  border-bottom: 0.5px solid var(--hair-3);
+  padding: 14px 14px 16px;
+  position: relative;
+}
+.summary-side .figure:nth-child(2n) { border-right: none; }
+.summary-side .figure:nth-last-child(-n+2) { border-bottom: none; }
+.summary-side .figure .lbl {
+  font-size: 8.5px; letter-spacing: 0.3em; color: var(--grey-2);
+  text-transform: uppercase; font-weight: 500; margin-bottom: 8px;
+}
+.summary-side .figure .ord {
+  position: absolute; top: 14px; right: 12px;
+  font-family: 'JetBrains Mono', monospace; font-size: 8.5px;
+  color: var(--grey-3); letter-spacing: 0.1em; font-weight: 500;
+}
+.summary-side .figure .v {
+  font-size: 28px; font-weight: 500; color: var(--ink);
+  line-height: 1; letter-spacing: -0.025em;
+}
+.summary-side .figure .v .unit {
+  font-size: 11px; color: var(--grey-2); margin-left: 4px;
+  font-weight: 400; letter-spacing: 0.04em;
+}
+.summary-side .figure .sub {
+  font-size: 9.5px; color: var(--grey-2); margin-top: 6px;
+  letter-spacing: 0.04em;
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  TIMELINE — full-bleed bar with axes                             */
+/* ──────────────────────────────────────────────────────────────── */
+.tl-row {
+  display: grid; grid-template-columns: 120px 1fr 120px;
+  border-bottom: 1.5px solid var(--ink);
+  padding: 18px 0 18px;
+  align-items: end;
+  gap: 24px;
+}
+.tl-left .nv {
+  font-size: 36px; font-weight: 300; color: var(--ink);
+  line-height: 1; letter-spacing: -0.03em;
+}
+.tl-left .nv small {
+  font-size: 10px; color: var(--grey-2); font-weight: 500;
+  letter-spacing: 0.16em; text-transform: uppercase; margin-left: 4px;
+}
+.tl-left .leg {
+  margin-top: 12px; font-size: 9px; color: var(--grey-2);
+  letter-spacing: 0.16em; text-transform: uppercase; line-height: 1.7;
+}
+.tl-left .leg .sw {
+  display: inline-block; width: 8px; height: 8px;
+  vertical-align: middle; margin-right: 4px;
+}
+.tl-left .leg .sw.p { background: var(--ink); }
+.tl-left .leg .sw.f { background: var(--grey-3); }
+.tl-left .leg .sw.e { background: var(--hair-2); }
+
+.tl-chart .axis {
+  display: flex; justify-content: space-between;
+  margin-top: 8px; font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; color: var(--grey-2); letter-spacing: 0.06em;
+}
+.tl-right {
+  text-align: right; font-size: 9.5px; color: var(--grey-2);
+  letter-spacing: 0.16em; text-transform: uppercase; line-height: 1.7;
+}
+.tl-right strong {
+  display: block; color: var(--ink); font-size: 24px;
+  font-weight: 500; letter-spacing: -0.015em;
+  margin-bottom: 4px; text-transform: none;
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  PAIR HEAT-MAP — dense 8-col grid, tier headers as inverse bars  */
+/* ──────────────────────────────────────────────────────────────── */
+.pair-heat {
+  border-bottom: 1.5px solid var(--ink);
+  padding-bottom: 0;
+}
+.tier-bar {
+  background: var(--ink); color: var(--paper);
+  margin: 0;
+  padding: 8px 14px;
+  display: grid; grid-template-columns: 56px 1fr auto;
+  align-items: baseline; gap: 16px;
+  font-size: 9.5px; letter-spacing: 0.32em;
+  text-transform: uppercase; font-weight: 600;
+}
+.tier-bar .roman {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  color: #BBB; letter-spacing: 0.06em; font-weight: 500;
+}
+.tier-bar .name { color: var(--paper); }
+.tier-bar .count {
+  color: #999; font-size: 9px; letter-spacing: 0.18em; font-weight: 500;
+}
+.tier-cells {
+  display: grid; grid-template-columns: repeat(8, minmax(0, 1fr));
+  border-top: 0.5px solid var(--hair-2);
+}
+.pcell {
+  padding: 10px 10px 12px;
+  border-right: 0.5px solid var(--hair-2);
+  border-bottom: 0.5px solid var(--hair-2);
+  position: relative; background: var(--paper);
+  min-width: 0;       /* allow shrink */
+  overflow: hidden;   /* clip any rogue content */
+}
+.pcell:nth-child(8n) { border-right: none; }
+.pcell.clean::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 3px; background: var(--ink);
+}
+.pcell.warn::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 3px; background: var(--grey-3);
+}
+.pcell .head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  border-bottom: 0.5px solid var(--hair-3);
+  padding-bottom: 6px; margin-bottom: 6px;
+}
+.pcell .sym {
+  font-family: 'JetBrains Mono', monospace; font-size: 12.5px;
+  font-weight: 600; color: var(--ink); letter-spacing: 0.02em;
+}
+.pcell .cid {
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  color: var(--grey-3); letter-spacing: 0.08em; font-weight: 500;
+}
+.pcell .stat {
+  display: grid; grid-template-columns: 1fr auto;
+  font-size: 9px; padding: 2px 0; color: var(--grey-2);
+  letter-spacing: 0.14em; text-transform: uppercase; font-weight: 500;
+  align-items: baseline;
+}
+.pcell .stat .v {
+  font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+  color: var(--ink); font-weight: 600; letter-spacing: 0.02em;
+}
+.pcell .stat .v.zero { color: var(--grey-4); font-weight: 400; }
+.pcell .stat.phant .v.zero { color: var(--ink); font-weight: 600; }
+.pcell.empty {
+  background: repeating-linear-gradient(
+    -45deg, transparent 0 4px, var(--paper-3) 4px 5px);
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  TWO-COL — defenses + recent                                     */
+/* ──────────────────────────────────────────────────────────────── */
+.two-col {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  border-bottom: 1.5px solid var(--ink);
+}
+.col-l { padding: 18px 28px 24px 0; border-right: 0.5px solid var(--hair-2); }
+.col-r { padding: 18px 0 24px 28px; }
+.col-cap {
+  font-size: 9px; color: var(--grey-2); letter-spacing: 0.32em;
+  text-transform: uppercase; font-weight: 600; margin-bottom: 14px;
+}
+.col-cap .ref { color: var(--ink); margin-right: 10px; }
+
+ul.defenses { list-style: none; }
+ul.defenses li {
+  padding: 9px 0; border-bottom: 0.5px solid var(--hair-3);
+  display: grid; grid-template-columns: 28px 96px 1fr; gap: 14px;
+  align-items: baseline;
+}
+ul.defenses li:last-child { border-bottom: none; }
+ul.defenses .n {
+  font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
+  color: var(--grey-3); font-weight: 600; letter-spacing: 0.06em;
+  text-align: right;
+}
+ul.defenses .tag {
+  font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+  color: var(--ink); font-weight: 600; letter-spacing: 0.04em;
+}
+ul.defenses .desc {
+  color: var(--ink-1); font-size: 11.5px; line-height: 1.55;
+}
+
+table.recent {
+  width: 100%; border-collapse: collapse; font-size: 11px;
+}
+table.recent thead th {
+  padding: 0 6px 10px; text-align: left;
+  font-weight: 600; font-size: 8.5px; color: var(--grey-2);
+  letter-spacing: 0.28em; text-transform: uppercase;
+  border-bottom: 0.5px solid var(--ink);
+}
+table.recent tbody td {
+  padding: 8px 6px; border-bottom: 0.5px solid var(--hair-3);
+  font-size: 11px; color: var(--ink-1);
+}
+table.recent td.num {
+  text-align: right; font-variant-numeric: tabular-nums;
+  color: var(--ink); font-weight: 600;
+}
+table.recent td.mono { font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+table.recent td.dim { color: var(--grey-2); }
+table.recent td.verd-pass { color: var(--ink); font-weight: 700; letter-spacing: 0.08em; }
+table.recent td.verd-fail { color: var(--grey-1); font-weight: 700; letter-spacing: 0.08em; }
+table.recent td.verd-err  { color: var(--grey-3); font-weight: 600; letter-spacing: 0.08em; }
+table.recent tr:last-child td { border-bottom: none; }
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  CONFIG + FOOTNOTES                                              */
+/* ──────────────────────────────────────────────────────────────── */
+.cfg-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  border-bottom: 1.5px solid var(--ink);
+}
+.cfg-l { padding: 18px 28px 24px 0; border-right: 0.5px solid var(--hair-2); }
+.cfg-r { padding: 18px 0 24px 28px; }
+
+table.cfg { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+table.cfg td {
+  padding: 8px 4px; border-bottom: 0.5px solid var(--hair-3); vertical-align: top;
+}
+table.cfg td:first-child {
+  color: var(--grey-2); font-size: 9px; letter-spacing: 0.26em;
+  text-transform: uppercase; font-weight: 600; width: 42%; padding-top: 10px;
+}
+table.cfg td:last-child {
+  color: var(--ink); font-weight: 500; text-align: right;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+}
+table.cfg tr:last-child td { border-bottom: none; }
+
+.cfg-r ol { list-style: none; counter-reset: fn; padding: 0; }
+.cfg-r ol li {
+  counter-increment: fn; padding: 6px 0 6px 28px; position: relative;
+  font-size: 10.5px; color: var(--ink-1); line-height: 1.55;
+  border-bottom: 0.5px solid var(--hair-3);
+}
+.cfg-r ol li:last-child { border-bottom: none; }
+.cfg-r ol li::before {
+  content: counter(fn, decimal-leading-zero);
+  position: absolute; left: 0; top: 7px;
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  color: var(--ink); font-weight: 700; letter-spacing: 0.05em;
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  COLOPHON                                                        */
+/* ──────────────────────────────────────────────────────────────── */
+.colophon {
+  background: var(--ink); color: var(--paper);
+  margin: 0 -20px;
+  padding: 12px 20px;
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  align-items: center;
+  font-size: 9.5px; letter-spacing: 0.32em;
+  text-transform: uppercase; font-weight: 500;
+}
+.colophon .left strong {
+  font-size: 11.5px; color: var(--paper); font-weight: 700;
+  letter-spacing: 0.32em; margin-right: 14px;
+}
+.colophon .left .role { color: #999; font-weight: 400; letter-spacing: 0.22em; }
+.colophon .center {
+  text-align: center; color: #999; font-weight: 400; letter-spacing: 0.32em;
+}
+.colophon .right { text-align: right; color: #999; font-weight: 400; letter-spacing: 0.32em; }
+.colophon .right .doc { color: var(--paper); font-weight: 600; }
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  STATUS LINE — thin compressed strip of clean/dirty signals      */
+/* ──────────────────────────────────────────────────────────────── */
+.status-strip {
+  display: grid; grid-template-columns: repeat(6, 1fr);
+  border-bottom: 1.5px solid var(--ink);
+  padding: 7px 0;
+  background: var(--paper);
+}
+.status-strip .stat {
+  padding: 0 14px;
+  border-right: 0.5px solid var(--hair-2);
+  display: flex; align-items: center; gap: 10px;
+  font-size: 9px; letter-spacing: 0.28em;
+  text-transform: uppercase; font-weight: 600; color: var(--ink-1);
+}
+.status-strip .stat:last-child { border-right: none; }
+.status-strip .stat .dot {
+  display: inline-block; width: 7px; height: 7px; background: var(--ink);
+  flex-shrink: 0;
+}
+.status-strip .stat .dot.warn { background: var(--grey-3); }
+.status-strip .stat .lbl { color: var(--grey-2); font-weight: 500; }
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  PULL QUOTE — featured callout between major sections            */
+/* ──────────────────────────────────────────────────────────────── */
+.pullq {
+  margin: 0;
+  padding: 48px 0 44px;
+  border-bottom: 1.5px solid var(--ink);
+  display: grid; grid-template-columns: 80px 1fr 80px;
+  align-items: start; gap: 0;
+  position: relative;
+}
+.pullq .mark-l, .pullq .mark-r {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--grey-3);
+  letter-spacing: 0.12em; font-weight: 500;
+}
+.pullq .mark-l { text-align: left;  padding-top: 6px; }
+.pullq .mark-r { text-align: right; padding-top: 6px; }
+.pullq blockquote {
+  font-size: 30px; font-weight: 300; color: var(--ink);
+  line-height: 1.28; letter-spacing: -0.02em;
+  text-align: center; max-width: 980px; margin: 0 auto;
+}
+.pullq blockquote strong { font-weight: 600; }
+.pullq blockquote em { font-style: normal; font-weight: 600; }
+.pullq cite {
+  display: block; margin-top: 22px;
+  text-align: center; font-size: 9px; letter-spacing: 0.4em;
+  color: var(--grey-2); text-transform: uppercase; font-style: normal;
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  METHODOLOGY — 6-phase test cycle diagram                        */
+/* ──────────────────────────────────────────────────────────────── */
+.method-grid {
+  display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));
+  border-bottom: 1.5px solid var(--ink);
+}
+.method-cell {
+  padding: 22px 18px 22px;
+  border-right: 0.5px solid var(--hair-2);
+  position: relative; min-height: 144px;
+}
+.method-cell:last-child { border-right: none; }
+.method-cell::after {
+  content: '→'; position: absolute; right: -6px; top: 26px;
+  color: var(--ink); font-size: 12px; font-weight: 600;
+  background: var(--paper); padding: 0 2px; line-height: 1; z-index: 2;
+}
+.method-cell:last-child::after { content: ''; }
+.method-cell .phase {
+  font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
+  color: var(--grey-3); font-weight: 600; letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+.method-cell .ttl {
+  font-size: 12px; font-weight: 700; color: var(--ink);
+  letter-spacing: 0.14em; text-transform: uppercase;
+  margin-bottom: 10px; padding-bottom: 8px;
+  border-bottom: 0.5px solid var(--hair-2);
+}
+.method-cell .desc {
+  font-size: 10.5px; color: var(--ink-1); line-height: 1.55;
+}
+.method-cell .dur {
+  position: absolute; bottom: 14px; left: 18px;
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  color: var(--grey-2); letter-spacing: 0.1em; font-weight: 600;
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  TIER SUB-TOTAL STRIP — appears under each tier-bar              */
+/* ──────────────────────────────────────────────────────────────── */
+.tier-totals {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) repeat(4, 78px);
+  align-items: baseline; gap: 12px;
+  padding: 9px 14px;
+  background: var(--paper-2);
+  border-bottom: 0.5px solid var(--hair-2);
+  font-size: 9px; letter-spacing: 0.22em;
+  text-transform: uppercase; color: var(--grey-2); font-weight: 500;
+}
+.tier-totals .lbl-roman { color: var(--grey-3); }
+.tier-totals .lbl { color: var(--grey-2); }
+.tier-totals .cell {
+  text-align: right; font-family: 'JetBrains Mono', monospace;
+}
+.tier-totals .cell .k {
+  color: var(--grey-3); margin-right: 8px; font-weight: 500;
+  letter-spacing: 0.18em;
+}
+.tier-totals .cell .n {
+  color: var(--ink); font-weight: 700; letter-spacing: 0; font-size: 10.5px;
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  PER-PAIR SPARKLINE — SVG mini bar chart (scales to any width)   */
+/* ──────────────────────────────────────────────────────────────── */
+.pcell .spark {
+  margin-top: 8px; padding-top: 6px;
+  border-top: 0.5px solid var(--hair-3);
+  width: 100%;
+}
+.pcell .spark svg {
+  display: block; width: 100%; height: 16px;
+}
+.pcell .spark-cap {
+  font-size: 7.5px; color: var(--grey-3); letter-spacing: 0.2em;
+  text-transform: uppercase; font-weight: 600;
+  margin-top: 4px; display: flex; justify-content: space-between;
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  DROP CAP on first summary paragraph                             */
+/* ──────────────────────────────────────────────────────────────── */
+.summary-body p.lead::first-letter {
+  font-size: 48px; line-height: 0.9; font-weight: 600;
+  float: left; padding: 4px 10px 0 0; color: var(--ink);
+  letter-spacing: -0.04em;
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  KEY FIGURES — alternate summary side panel layout               */
+/* ──────────────────────────────────────────────────────────────── */
+.kfg {
+  border-top: 0.5px solid var(--ink);
+  padding: 14px 14px 0;
+  position: relative;
+  border-right: 0.5px solid var(--hair-3);
+  border-bottom: 0.5px solid var(--hair-3);
+  min-height: 92px;
+}
+
+@media print {
+  body { max-width: none; padding: 0 16px 16px; border: none; }
+  .masthead, .colophon { margin: 0 -16px; }
+  .sec-head, .pair-heat, .two-col, .cfg-row,
+  .method-grid, .pullq, .status-strip { page-break-inside: avoid; }
+  table.recent tr:hover td { background: transparent; }
+}
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <div class="cell"><span class="strong">KINSHASA MULTI-ASSET</span></div>
+  <div class="cell"><span class="muted">ORDER-AUDIT / ENGINEERING REPORT</span></div>
+  <div class="cell"><span class="muted">2026.06.11</span></div>
+  <div class="cell"><span class="muted">AUDIT-20260611-001</span></div>
+</div>
+
+<div class="title-row">
+  <div class="title-main">
+    <div class="eyebrow">ORDER-EVENT AUDIT · PROTECTIVE-INVARIANT REPORT</div>
+    <h1>US Equity Order-Audit Report</h1>
+    <div class="lede">Across <strong>3,335</strong> order events on <strong>32</strong> symbols, the protective stack prevented <strong>1,447</strong> naked-short attempts with <strong>zero</strong> shorts reaching the broker.</div>
+  </div>
+  <div class="title-meta">
+    <dl><dt>Report</dt><dd class="mono">AUDIT-20260611-001</dd></dl>
+    <dl><dt>Issued</dt><dd class="mono">2026.06.11 23:59</dd></dl>
+    <dl><dt>Source</dt><dd>order.csv audit</dd></dl>
+    <dl><dt>Audit date</dt><dd>20260611</dd></dl>
+    <dl><dt>Account</dt><dd>IBKR Paper</dd></dl>
+  </div>
+</div>
+
+<div class="status-strip">
+  <div class="stat"><span class="dot"></span><span class="lbl">SHORTS</span>0 EXECUTED</div>
+  <div class="stat"><span class="dot"></span><span class="lbl">PREVENTED</span>1,447</div>
+  <div class="stat"><span class="dot"></span><span class="lbl">PHANTOMS</span>NONE</div>
+  <div class="stat"><span class="dot"></span><span class="lbl">DUP-GUARD</span>6</div>
+  <div class="stat"><span class="dot"></span><span class="lbl">ERR-135</span>23 HANDLED</div>
+  <div class="stat"><span class="dot"></span><span class="lbl">SYMBOLS</span>32 ACTIVE</div>
+</div>
+
+<div class="sec-head first">
+  <div class="ord">01</div>
+  <div class="ttl">Headline Metrics<span class="em-dash">/</span><span class="sub">order events · fills · shorts prevented</span></div>
+  <div class="cap">Section A</div>
+</div>
+<div class="metrics">
+  <div class="metric"><span class="ord">A</span><div class="lbl">Order events</div><div class="v">3,335</div><div class="note">across 32 symbols</div></div>
+  <div class="metric"><span class="ord">B</span><div class="lbl">Fills executed</div><div class="v">445</div><div class="note">275 buy · 170 sell</div></div>
+  <div class="metric"><span class="ord">C</span><div class="lbl">Shorts prevented</div><div class="v">1,447</div><div class="note">0 reached broker</div></div>
+  <div class="metric"><span class="ord">D</span><div class="lbl">Window</div><div class="v med">3H 04M</div><div class="note">first → last event</div></div>
+</div>
+
+<div class="sec-head">
+  <div class="ord">02</div>
+  <div class="ttl">Summary<span class="em-dash">/</span><span class="sub">protective-invariant narrative</span></div>
+  <div class="cap">Section B</div>
+</div>
+<div class="summary-grid">
+  <div class="summary-body"><div class="standfirst">Across <strong>3,335</strong> order events on <strong>32</strong> symbols, the protective stack prevented <strong>1,447</strong> naked-short attempts with <strong>zero</strong> shorts reaching the broker.</div><p class='lead'>This report is derived directly from the <strong>order-event audit trail</strong> (<span class='mono' style='font-size:11px'>data/audit/20260611/&lt;symbol&gt;/order.csv</span>) rather than completed chaos cycles — the engines traded heavily under churn but were stopped before a full cycle closed, so this captures the ground-truth order activity instead.</p><p class='muted'>The headline result is the protective invariant: every SELL that would have created a short position against a broker-flat book was refused pre-flight (A22). The guard fired <strong>1,447</strong> times and held <strong>1,447/1,447</strong> — no naked short ever reached the broker. The duplicate-sell guard adopted resting stops <strong>6</strong> times rather than double-placing.</p></div>
+  <div class="summary-side">
+    <div class="figure"><span class="ord">A</span><div class="lbl">Brackets placed</div><div class="v">236</div><div class="sub">entry STP-LMT parents</div></div>
+    <div class="figure"><span class="ord">B</span><div class="lbl">Child re-arms</div><div class="v">276</div><div class="sub">stop retargets</div></div>
+    <div class="figure"><span class="ord">C</span><div class="lbl">Dup-sell adopts</div><div class="v">6</div><div class="sub">ZM-class prevented</div></div>
+    <div class="figure"><span class="ord">D</span><div class="lbl">Stale rejects</div><div class="v">2</div><div class="sub">qty-mismatch guard</div></div>
+  </div>
+</div>
+
+<div class="sec-head">
+  <div class="ord">03</div>
+  <div class="ttl">Per-Symbol Activity<span class="em-dash">/</span><span class="sub">32 symbols · order.csv truth</span></div>
+  <div class="cap">Section C</div>
+</div>
+<div class="pair-heat"><div class='tier-bar'><span class='roman'>—</span><span class='name'>ORDER ACTIVITY BY SYMBOL</span><span class='count'>32 ACTIVE</span></div><div class='tier-cells'><div class='pcell clean'>  <div class='head'><span class='sym'>NVDA</span>  <span class='cid'>80</span></div>  <div class='stat'><span>BRACK</span><span class='v'>5</span></div>  <div class='stat'><span>FILLS</span><span class='v'>7</span></div>  <div class='stat'><span>GUARD</span><span class='v'>209</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>AAPL</span>  <span class='cid'>81</span></div>  <div class='stat'><span>BRACK</span><span class='v'>2</span></div>  <div class='stat'><span>FILLS</span><span class='v'>2</span></div>  <div class='stat'><span>GUARD</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>MSFT</span>  <span class='cid'>82</span></div>  <div class='stat'><span>BRACK</span><span class='v'>8</span></div>  <div class='stat'><span>FILLS</span><span class='v'>19</span></div>  <div class='stat'><span>GUARD</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>GOOGL</span>  <span class='cid'>83</span></div>  <div class='stat'><span>BRACK</span><span class='v'>12</span></div>  <div class='stat'><span>FILLS</span><span class='v'>30</span></div>  <div class='stat'><span>GUARD</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>AMZN</span>  <span class='cid'>84</span></div>  <div class='stat'><span>BRACK</span><span class='v'>7</span></div>  <div class='stat'><span>FILLS</span><span class='v'>10</span></div>  <div class='stat'><span>GUARD</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>META</span>  <span class='cid'>85</span></div>  <div class='stat'><span>BRACK</span><span class='v'>7</span></div>  <div class='stat'><span>FILLS</span><span class='v'>19</span></div>  <div class='stat'><span>GUARD</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>AVGO</span>  <span class='cid'>86</span></div>  <div class='stat'><span>BRACK</span><span class='v'>8</span></div>  <div class='stat'><span>FILLS</span><span class='v'>17</span></div>  <div class='stat'><span>GUARD</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>TSLA</span>  <span class='cid'>87</span></div>  <div class='stat'><span>BRACK</span><span class='v'>14</span></div>  <div class='stat'><span>FILLS</span><span class='v'>32</span></div>  <div class='stat'><span>GUARD</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>JPM</span>  <span class='cid'>88</span></div>  <div class='stat'><span>BRACK</span><span class='v'>7</span></div>  <div class='stat'><span>FILLS</span><span class='v'>16</span></div>  <div class='stat'><span>GUARD</span><span class='v'>269</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>V</span>  <span class='cid'>89</span></div>  <div class='stat'><span>BRACK</span><span class='v'>6</span></div>  <div class='stat'><span>FILLS</span><span class='v'>10</span></div>  <div class='stat'><span>GUARD</span><span class='v'>209</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>MA</span>  <span class='cid'>90</span></div>  <div class='stat'><span>BRACK</span><span class='v'>9</span></div>  <div class='stat'><span>FILLS</span><span class='v'>23</span></div>  <div class='stat'><span>GUARD</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>WMT</span>  <span class='cid'>91</span></div>  <div class='stat'><span>BRACK</span><span class='v'>4</span></div>  <div class='stat'><span>FILLS</span><span class='v'>5</span></div>  <div class='stat'><span>GUARD</span><span class='v'>189</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>COST</span>  <span class='cid'>92</span></div>  <div class='stat'><span>BRACK</span><span class='v'>4</span></div>  <div class='stat'><span>FILLS</span><span class='v'>7</span></div>  <div class='stat'><span>GUARD</span><span class='v'>129</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>HD</span>  <span class='cid'>93</span></div>  <div class='stat'><span>BRACK</span><span class='v'>9</span></div>  <div class='stat'><span>FILLS</span><span class='v'>23</span></div>  <div class='stat'><span>GUARD</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>LLY</span>  <span class='cid'>94</span></div>  <div class='stat'><span>BRACK</span><span class='v'>5</span></div>  <div class='stat'><span>FILLS</span><span class='v'>10</span></div>  <div class='stat'><span>GUARD</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>NFLX</span>  <span class='cid'>95</span></div>  <div class='stat'><span>BRACK</span><span class='v'>7</span></div>  <div class='stat'><span>FILLS</span><span class='v'>12</span></div>  <div class='stat'><span>GUARD</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>ORCL</span>  <span class='cid'>96</span></div>  <div class='stat'><span>BRACK</span><span class='v'>6</span></div>  <div class='stat'><span>FILLS</span><span class='v'>9</span></div>  <div class='stat'><span>GUARD</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>AMD</span>  <span class='cid'>97</span></div>  <div class='stat'><span>BRACK</span><span class='v'>18</span></div>  <div class='stat'><span>FILLS</span><span class='v'>33</span></div>  <div class='stat'><span>GUARD</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>ADBE</span>  <span class='cid'>98</span></div>  <div class='stat'><span>BRACK</span><span class='v'>12</span></div>  <div class='stat'><span>FILLS</span><span class='v'>32</span></div>  <div class='stat'><span>GUARD</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>CRM</span>  <span class='cid'>99</span></div>  <div class='stat'><span>BRACK</span><span class='v'>5</span></div>  <div class='stat'><span>FILLS</span><span class='v'>7</span></div>  <div class='stat'><span>GUARD</span><span class='v'>15</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>NOW</span>  <span class='cid'>100</span></div>  <div class='stat'><span>BRACK</span><span class='v'>12</span></div>  <div class='stat'><span>FILLS</span><span class='v'>20</span></div>  <div class='stat'><span>GUARD</span><span class='v'>49</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>BAC</span>  <span class='cid'>101</span></div>  <div class='stat'><span>BRACK</span><span class='v'>6</span></div>  <div class='stat'><span>FILLS</span><span class='v'>7</span></div>  <div class='stat'><span>GUARD</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>UNH</span>  <span class='cid'>102</span></div>  <div class='stat'><span>BRACK</span><span class='v'>4</span></div>  <div class='stat'><span>FILLS</span><span class='v'>7</span></div>  <div class='stat'><span>GUARD</span><span class='v'>269</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>XOM</span>  <span class='cid'>103</span></div>  <div class='stat'><span>BRACK</span><span class='v'>3</span></div>  <div class='stat'><span>FILLS</span><span class='v'>2</span></div>  <div class='stat'><span>GUARD</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>ABBV</span>  <span class='cid'>104</span></div>  <div class='stat'><span>BRACK</span><span class='v'>10</span></div>  <div class='stat'><span>FILLS</span><span class='v'>16</span></div>  <div class='stat'><span>GUARD</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>JNJ</span>  <span class='cid'>105</span></div>  <div class='stat'><span>BRACK</span><span class='v'>2</span></div>  <div class='stat'><span>FILLS</span><span class='v'>1</span></div>  <div class='stat'><span>GUARD</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>MRK</span>  <span class='cid'>106</span></div>  <div class='stat'><span>BRACK</span><span class='v'>8</span></div>  <div class='stat'><span>FILLS</span><span class='v'>13</span></div>  <div class='stat'><span>GUARD</span><span class='v'>109</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>PFE</span>  <span class='cid'>107</span></div>  <div class='stat'><span>BRACK</span><span class='v'>9</span></div>  <div class='stat'><span>FILLS</span><span class='v'>15</span></div>  <div class='stat'><span>GUARD</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>TMO</span>  <span class='cid'>108</span></div>  <div class='stat'><span>BRACK</span><span class='v'>5</span></div>  <div class='stat'><span>FILLS</span><span class='v'>8</span></div>  <div class='stat'><span>GUARD</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>PG</span>  <span class='cid'>109</span></div>  <div class='stat'><span>BRACK</span><span class='v'>7</span></div>  <div class='stat'><span>FILLS</span><span class='v'>10</span></div>  <div class='stat'><span>GUARD</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>KO</span>  <span class='cid'>110</span></div>  <div class='stat'><span>BRACK</span><span class='v'>8</span></div>  <div class='stat'><span>FILLS</span><span class='v'>12</span></div>  <div class='stat'><span>GUARD</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div><div class='pcell clean'>  <div class='head'><span class='sym'>PEP</span>  <span class='cid'>111</span></div>  <div class='stat'><span>BRACK</span><span class='v'>7</span></div>  <div class='stat'><span>FILLS</span><span class='v'>11</span></div>  <div class='stat'><span>GUARD</span><span class='v zero'>0</span></div>  <div class='stat phant'><span>PHANT</span><span class='v '>0</span></div></div></div></div>
+
+<div class="pullq">
+  <div class="mark-l">FINDING · 01</div>
+  <blockquote>The protective invariant held <em>1,447</em> of <em>1,447</em> — every naked-short attempt was refused pre-flight, and <strong>zero</strong> shorts reached the broker.</blockquote>
+  <cite>ORDER-AUDIT · AUDIT-20260611-001</cite>
+  <div class="mark-r">— 01 / END</div>
+</div>
+
+<div class="sec-head">
+  <div class="ord">04</div>
+  <div class="ttl">Top Guard Activity · Defenses<span class="em-dash">/</span><span class="sub">most-active symbols · validated mechanisms</span></div>
+  <div class="cap">Section D</div>
+</div>
+<div class="two-col">
+  <div class="col-l">
+    <div class="col-cap"><span class="ref">A</span>TOP-10 SYMBOLS BY GUARD ACTIVITY</div>
+    <table class="recent">
+      <thead><tr><th>Sym</th><th style="text-align:right;">Events</th><th style="text-align:right;">Brack</th><th style="text-align:right;">Fills</th><th style="text-align:right;">Guard</th><th style="text-align:right;">Dup</th></tr></thead>
+      <tbody><tr><td class='sym mono' style='font-weight:600'>JPM</td><td class='num'>337</td><td class='num'>7</td><td class='num'>16</td><td class='num'>269</td><td class='num'>0</td></tr><tr><td class='sym mono' style='font-weight:600'>UNH</td><td class='num'>303</td><td class='num'>4</td><td class='num'>7</td><td class='num'>269</td><td class='num'>0</td></tr><tr><td class='sym mono' style='font-weight:600'>NVDA</td><td class='num'>238</td><td class='num'>5</td><td class='num'>7</td><td class='num'>209</td><td class='num'>0</td></tr><tr><td class='sym mono' style='font-weight:600'>V</td><td class='num'>256</td><td class='num'>6</td><td class='num'>10</td><td class='num'>209</td><td class='num'>0</td></tr><tr><td class='sym mono' style='font-weight:600'>WMT</td><td class='num'>211</td><td class='num'>4</td><td class='num'>5</td><td class='num'>189</td><td class='num'>0</td></tr><tr><td class='sym mono' style='font-weight:600'>COST</td><td class='num'>164</td><td class='num'>4</td><td class='num'>7</td><td class='num'>129</td><td class='num'>0</td></tr><tr><td class='sym mono' style='font-weight:600'>MRK</td><td class='num'>159</td><td class='num'>8</td><td class='num'>13</td><td class='num'>109</td><td class='num'>0</td></tr><tr><td class='sym mono' style='font-weight:600'>NOW</td><td class='num'>128</td><td class='num'>12</td><td class='num'>20</td><td class='num'>49</td><td class='num'>0</td></tr><tr><td class='sym mono' style='font-weight:600'>CRM</td><td class='num'>48</td><td class='num'>5</td><td class='num'>7</td><td class='num'>15</td><td class='num'>0</td></tr><tr><td class='sym mono' style='font-weight:600'>AAPL</td><td class='num'>10</td><td class='num'>2</td><td class='num'>2</td><td class='num'>0</td><td class='num'>0</td></tr></tbody>
+    </table>
+  </div>
+  <div class="col-r">
+    <div class="col-cap"><span class="ref">B</span>DEFENSIVE MECHANISMS EXERCISED</div>
+    <ul class="defenses"><li><span class='n'>01</span><span class='tag'>A22</span><span class='desc'>Pre-flight broker-qty check — refuse SELL that would short</span></li><li><span class='n'>02</span><span class='tag'>A53</span><span class='desc'>Refuse + alert on drift; never silently mutate engine state</span></li><li><span class='n'>03</span><span class='tag'>A45 / A48</span><span class='desc'>Invariant sweep — kills orphan SELL stops in ≤ 250 ms</span></li><li><span class='n'>04</span><span class='tag'>A57</span><span class='desc'>Orphan-parent cancel on child cancel (Error 135 respawn race)</span></li><li><span class='n'>05</span><span class='tag'>A19</span><span class='desc'>Reconcile broker-truth vs engine on every health tick</span></li><li><span class='n'>06</span><span class='tag'>DUP-GUARD</span><span class='desc'>Adopt resting SELL instead of double-placing (ZM-class fix)</span></li></ul>
+  </div>
+</div>
+
+<div class="sec-head">
+  <div class="ord">05</div>
+  <div class="ttl">Notes<span class="em-dash">/</span><span class="sub">how to read this report</span></div>
+  <div class="cap">Section E</div>
+</div>
+<div class="cfg-row">
+  <div class="cfg-l">
+    <div class="col-cap"><span class="ref">A</span>TOTALS</div>
+    <table class="cfg">
+      <tr><td>Order events</td><td>3,335</td></tr>
+      <tr><td>Brackets placed</td><td>236</td></tr>
+      <tr><td>Buy fills</td><td>275</td></tr>
+      <tr><td>Sell fills</td><td>170</td></tr>
+      <tr><td>Shorts prevented</td><td>1,447</td></tr>
+      <tr><td>Shorts executed</td><td>0</td></tr>
+      <tr><td>Symbols active</td><td>32</td></tr>
+    </table>
+  </div>
+  <div class="cfg-r">
+    <div class="col-cap"><span class="ref">B</span>NOTES</div>
+    <ol>
+      <li>Derived from per-symbol <span class="mono">order.csv</span> event logs, not chaos-cycle summaries — captures real order activity when no full cycle completed.</li>
+      <li><span class="mono">SHORTING_PREVENTED</span> = engine attempted a SELL that would create a short against a broker-flat book; the A22 pre-flight guard refused it. Count reflects refusals, not failures.</li>
+      <li>GUARD column on the heat-map = shorts-prevented for that symbol. High counts indicate persistent engine-vs-broker drift the guard absorbed.</li>
+      <li>Zero shorts reached the broker across the entire window — the protective invariant is the headline result.</li>
+    </ol>
+  </div>
+</div>
+
+<div class="colophon">
+  <div class="left"><strong>NABI — ENGINEERING</strong><span class="role">ENGINEERING · SYSTEMATIC TRADING</span></div>
+  <div class="center">PREPARED 2026.06.11 · ORDER-AUDIT</div>
+  <div class="right"><span class="doc">AUDIT-20260611-001</span> · CONFIDENTIAL</div>
+</div>
+
+</body>
+</html>

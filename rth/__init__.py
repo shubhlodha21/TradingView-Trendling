@@ -17,6 +17,9 @@ from .clock import RthClock
 from .trendline import Anchor, Trendline
 from .crossing import CrossDetector, CrossEvent
 from .feeds import PriceFeed, SimulatedFeed, YFinanceFeed, get_feed
+# Safe to import unconditionally: the IB client library is only imported when a
+# feed is actually started.
+from .ibkr import IBKRFeed
 
 __all__ = [
     "ASSET_CLASSES",
@@ -33,5 +36,6 @@ __all__ = [
     "PriceFeed",
     "SimulatedFeed",
     "YFinanceFeed",
+    "IBKRFeed",
     "get_feed",
 ]

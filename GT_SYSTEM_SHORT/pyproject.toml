@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "gt-system"
+version = "0.1.0"
+requires-python = ">=3.10"
+
+dependencies = [
+    # IBKR API - non-negotiable.
+    # ib_async is the actively-maintained community fork of ib_insync
+    # (ib_insync upstream effectively stopped releases in 2023 and breaks
+    # on Python 3.14 stdlib asyncio). Same public API surface — IB, Stock,
+    # MarketOrder, LimitOrder, StopLimitOrder, fillEvent, statusEvent, etc.
+    "ib_async>=2.1.0",
+    "nest_asyncio>=1.6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.1",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.4",
+    "mypy>=1.10",
+]
+# Faster asyncio event loop (libuv-based). Drops pipeline p99 latency from
+# ~0.4ms to ~0.15ms. Unix only — Windows users can't install uvloop and
+# the --uvloop flag will print a fallback warning rather than crashing.
+fast = [
+    "uvloop>=0.21",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.mypy]
+python_version = "3.10"
+strict = true

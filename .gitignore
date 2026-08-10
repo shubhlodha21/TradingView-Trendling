@@ -16,7 +16,25 @@ env/
 .env
 *.key
 
+# Runtime output (tmux.sh writes here)
+logs/
+*.jsonl
+
 # OS
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Nested repo metadata, set aside during the monorepo commit.
+.git_off/
+
+# Vendored JS dependencies from the GT webapp frontends. Tracked in the
+# standalone GT repos, deliberately not here: ~6,600 files and a pair of 9.6MB
+# esbuild binaries that `npm install` reproduces exactly from package-lock.json.
+node_modules/
+
+# Build output and local runtime state from the GT systems.
+dist/
+build/
+*.log
+.gt_state_*.json

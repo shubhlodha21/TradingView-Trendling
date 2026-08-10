@@ -1,0 +1,138 @@
+<mxfile host="app.diagrams.net" agent="gt-system" version="24.0.0">
+  <diagram id="gt-approval-flow" name="GT Approval Flow">
+    <mxGraphModel dx="1000" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="950" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ===== CONTAINERS (drawn behind) ===== -->
+        <mxCell id="c_browser" value="BROWSER  —  single SPA" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#5b7fbf;dashed=1;verticalAlign=top;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="1080" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="c_backend" value="FastAPI BACKEND  (single, on EC2)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#666666;dashed=1;verticalAlign=top;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="40" y="230" width="1080" height="330" as="geometry" />
+        </mxCell>
+        <mxCell id="c_short" value="FOLDER: SHORT  (shorting engine)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#b85450;dashed=1;verticalAlign=top;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="110" y="620" width="400" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="c_long" value="FOLDER: LONG  (long engine)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#82b366;dashed=1;verticalAlign=top;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="660" y="620" width="400" height="200" as="geometry" />
+        </mxCell>
+
+        <!-- ===== BROWSER ===== -->
+        <mxCell id="trader" value="TRADER view&#10;• request form (DELL --trigger ...)&#10;• my requests + live monitor" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="90" y="80" width="440" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="admin" value="ADMIN view&#10;• pending-approvals queue&#10;• Approve / Reject" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="630" y="80" width="440" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- ===== BACKEND ===== -->
+        <mxCell id="auth" value="AUTH&#10;trader vs admin (JWT / session)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="80" y="270" width="210" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="reqqueue" value="PENDING queue&#10;SQLite + audit (who / when)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="80" y="355" width="210" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="decision" value="Admin&#10;approve?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="350" y="350" width="150" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="rejected" value="REJECTED" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="365" y="480" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="launch" value="LAUNCH — spawn&#10;run_live.py ... --paper=false&#10;(subprocess or tmux) into folder" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="560" y="350" width="270" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="statereader" value="StateReader (MULTI-ROOT)&#10;scans ALL folders, tags strategy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="560" y="470" width="270" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="wsb" value="WSBroadcaster @5Hz&#10;snapshot + queue frames" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="880" y="350" width="200" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- ===== SHORT FOLDER ===== -->
+        <mxCell id="bot_s1" value="run_live.py DELL 101" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="140" y="670" width="170" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="bot_s2" value="run_live.py TSLA 102" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="140" y="720" width="170" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="json_s" value=".gt_live_*.json&#10;.gt_state_*.json" style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="350" y="685" width="140" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ===== LONG FOLDER ===== -->
+        <mxCell id="bot_l1" value="run_live.py NVDA 201" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="690" y="670" width="170" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="bot_l2" value="run_live.py AAPL 202" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="690" y="720" width="170" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="json_l" value=".gt_live_*.json&#10;.gt_state_*.json" style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="890" y="685" width="140" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ===== IBKR ===== -->
+        <mxCell id="ibkr" value="IBKR / TWS  (LIVE account)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="470" y="860" width="230" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- ===== EDGES ===== -->
+        <mxCell id="e1" value="1. POST /api/requests (trader)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#6c8ebf;" edge="1" parent="1" source="trader" target="reqqueue">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="Approve / Reject (admin)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#82b366;" edge="1" parent="1" source="admin" target="decision">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="PENDING" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="reqqueue" target="decision">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="reject" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#b85450;" edge="1" parent="1" source="decision" target="rejected">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="2. approve" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#82b366;fontStyle=1;" edge="1" parent="1" source="decision" target="launch">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="spawn into SHORT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#82b366;" edge="1" parent="1" source="launch" target="c_short">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="spawn into LONG" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#82b366;" edge="1" parent="1" source="launch" target="c_long">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="writes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="bot_s1" target="json_s">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="bot_s2" target="json_s">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="writes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="bot_l1" target="json_l">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="bot_l2" target="json_l">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" value="3. reads" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;dashed=1;strokeColor=#9673a6;" edge="1" parent="1" source="statereader" target="json_s">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" value="3. reads" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;dashed=1;strokeColor=#9673a6;" edge="1" parent="1" source="statereader" target="json_l">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#9673a6;" edge="1" parent="1" source="statereader" target="wsb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" value="4. WS 5Hz live" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;dashed=1;strokeColor=#9673a6;" edge="1" parent="1" source="wsb" target="admin">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" value="4. WS 5Hz live" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;dashed=1;strokeColor=#9673a6;" edge="1" parent="1" source="wsb" target="trader">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" value="live orders" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#6c8ebf;" edge="1" parent="1" source="c_short" target="ibkr">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" value="live orders" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#6c8ebf;" edge="1" parent="1" source="c_long" target="ibkr">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

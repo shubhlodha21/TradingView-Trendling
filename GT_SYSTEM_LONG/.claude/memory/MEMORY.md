@@ -1,0 +1,1 @@
+- [Senior Review Fixes Applied](senior_review_fixes_applied.md) - Critical fixes from senior quant review

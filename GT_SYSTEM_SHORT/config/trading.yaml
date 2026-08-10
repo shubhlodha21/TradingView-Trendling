@@ -1,0 +1,53 @@
+# GT_SYSTEM Trading Configuration
+# All strategy parameters managed here - no hardcoded values
+
+environment: paper  # 'paper' or 'live'
+
+# === IBKR Connection ===
+ibkr:
+  host: "127.0.0.1"
+  port: 4001  # 4001=paper gateway, 4002=live gateway, 7496=TWS paper, 7497=TWS live
+  client_id: 1
+  reconnect_attempts: 5
+  heartbeat_timeout_seconds: 90
+
+# === Strategy Parameters ===
+strategy:
+  ticker: "PLTR"
+  trigger_price: 138.00
+  stop_loss_pct: 0.02  # 2% stop loss
+  quantity: 1
+  order_type: "LIMIT"  # 'LIMIT' or 'MARKET'
+
+# === Risk Limits ===
+risk:
+  daily_loss_limit_pct: -0.02  # -2% daily loss = stop trading
+  max_consecutive_losses: 3
+  max_trades_per_day: 50
+  max_position_size: 100
+  position_limit_pct: 0.10  # 10% of capital per position
+  slippage_threshold_pct: 0.005  # 0.5% max slippage
+
+# === Capital Management ===
+capital:
+  initial_capital: 100000
+  max_capital_per_trade_pct: 0.05  # 5% of capital per trade
+
+# === Alerts ===
+alerts:
+  slack_webhook: ""  # Set via SLACK_WEBHOOK env var
+  teams_webhook: ""   # Set via TEAMS_WEBHOOK env var
+  enabled: true
+  rate_limit_per_minute: 10
+
+# === Logging ===
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  log_group: "/algo-trading/gt-system"
+  json_format: true
+
+# === Health Check ===
+health:
+  port: 8080
+  liveness_path: "/health/live"
+  readiness_path: "/health/ready"

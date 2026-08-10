@@ -1,0 +1,89 @@
+%% GT System — Live Architecture (current state, May 2026)
+%%
+%% Render in FigJam: Shift+M (or toolbar → Diagram → Mermaid), paste this file.
+%% Render in browser: paste at https://mermaid.live
+%% Render in GitHub: this file renders inline on the file view.
+%%
+%% Conventions:
+%%   Solid arrow      = synchronous call / data flow
+%%   Bidirectional    = persistent two-way channel (TCP, request/response)
+%%   Dotted arrow     = async / non-blocking / queue / external
+%%   Backward arrow   = return / control flow (rendered right-to-left)
+%%
+%% Subgraph palette (auto-styled by FigJam):
+%%   client      = operator / display
+%%   gateway     = broker network edge
+%%   service     = in-process Python components
+%%   datastore   = on-disk persistence
+%%   external    = third-party integrations
+%%   async       = bounded in-process queues
+flowchart LR
+    subgraph client ["Operator and Display"]
+        cli["CLI Launcher and Signal Handlers"]
+        dashboard["Terminal Dashboard 3Hz refresh"]
+    end
+
+    subgraph gateway ["Broker Edge"]
+        ibkrGw["IBKR Gateway TWS routes to NYSE NASDAQ"]
+    end
+
+    subgraph service ["GT Process single Python runtime"]
+        connSup["Connection Supervisor heartbeat reconnect with backoff"]
+        brokerClient["Broker Client ib_async with order id map"]
+        feedHandler["Feed Handler BBO and Tick by Tick subscriptions"]
+        pipeline["Tick Pipeline Sequence Dedup FastValidator"]
+        engine["Strategy Engine LTP driven state machine ETH session aware"]
+        riskGate["Pre Trade Risk Gate O1 cached equity"]
+        orderRegistry["Order Registry exec_id dedup commission accounting"]
+        supervisors["Background Tasks Session Controller Health Check Daily Reset"]
+        auditMgr["Audit Manager 4 stream non blocking writer threads"]
+        alertMgr["Alert Manager file stdout slack channels"]
+    end
+
+    subgraph datastore ["Persistence"]
+        stateFile["State JSON atomic write plus fsync per save"]
+        auditCsv["Audit CSV per day per stream gzip rotated 90d retention"]
+        alertJsonl["Alert JSONL per day appended live"]
+    end
+
+    subgraph external ["External Integrations"]
+        slack["Slack Webhook optional via GT_SLACK_WEBHOOK"]
+    end
+
+    subgraph async ["Bounded In Process Queues"]
+        tickQueue["Tick Queue depth 500 drop oldest backpressure"]
+        stateQueue["State Writer Queue depth 8 drop oldest"]
+        auditQueues["Audit Writer Queues depth 5000 per stream"]
+    end
+
+    cli -->|"Start signals control"| engine
+    dashboard <---|"sync_engine status 3Hz"| engine
+
+    connSup <---|"Wire reconnect callbacks"| engine
+    connSup <-->|"Heartbeat 5s and reconnect 1s to 60s backoff"| brokerClient
+    brokerClient <-->|"ib_async TCP orders and ticks"| ibkrGw
+
+    ibkrGw -->|"Tick stream BBO and Tick by Tick"| feedHandler
+    feedHandler -->|"Raw ticks fan out"| pipeline
+    pipeline -->|"Validated ticks only"| engine
+
+    engine -.->|"on_tick enqueue and consumer drain"| tickQueue
+
+    engine <-->|"check returns RiskResult"| riskGate
+    engine <-->|"submit on_fill on_reject"| orderRegistry
+    brokerClient <---|"place_stop_limit cancel reconcile"| engine
+
+    engine -->|"log feed state order pnl"| auditMgr
+    auditMgr -.->|"Enqueue per stream"| auditQueues
+    auditQueues -.->|"Batched flush daily rotate gzip"| auditCsv
+
+    engine -.->|"Snapshot every state transition"| stateQueue
+    stateQueue -.->|"Atomic temp plus fsync plus rename"| stateFile
+
+    engine -->|"Tripwire Order Reject Naked Position"| alertMgr
+    supervisors -->|"Naked Stale Feed Drawdown Session events"| alertMgr
+    alertMgr -->|"FileChannel JSONL append per alert"| alertJsonl
+    alertMgr -.->|"SlackChannel webhook on Slack: inert until env set"| slack
+
+    supervisors -->|"Pause Resume Place entry on open Reset counters"| engine
+    supervisors -->|"fetch_open_orders get_equity probes"| brokerClient

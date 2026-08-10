@@ -1,0 +1,82 @@
+# Headless IB Gateway via Docker — for the equity chaos test fleet.
+#
+# Setup
+# ─────
+#   1. Copy .env.example → .env and fill in your PAPER account credentials
+#   2. docker compose up -d
+#   3. Wait ~90 sec for auto-login (watch:  docker compose logs -f ib-gateway )
+#   4. Confirm:  nc -zv 127.0.0.1 4002    →  "succeeded"
+#   5. Run the equity chaos test natively against the gateway:
+#         GT_IBKR_PORT=4002 python3 -m tests.paper.chaos_test_equity \
+#             --scenario rolling-kill --kill-interval 600 --settle 30
+#
+# What this provides
+# ──────────────────
+#   - Headless IB Gateway running 24×7 inside a container (no GUI / X server)
+#   - IBC (IB Controller) for automated login (no manual click-through)
+#   - Auto-restart on container crash
+#   - Survives IBKR's daily scheduled shutdown (IBC re-launches automatically)
+#   - VNC on 5900 (localhost only) for visual debug if needed
+#
+# Why this is better than full TWS on EC2
+# ───────────────────────────────────────
+#   - Gateway is ~600 MB RAM vs TWS ~2 GB
+#   - No X server / GUI dependencies
+#   - IBC handles daily 5pm-ET auto-shutdown that breaks unattended TWS
+#   - One-line restart:  docker compose restart ib-gateway
+
+services:
+  ib-gateway:
+    image: ghcr.io/gnzsnz/ib-gateway:stable
+    container_name: gt-ibgw-equity
+    restart: unless-stopped
+    environment:
+      # Credentials (read from .env — NEVER commit .env to git)
+      TWS_USERID:           ${TWS_USERID}
+      TWS_PASSWORD:         ${TWS_PASSWORD}
+      # Paper mode — change to "live" ONLY when you mean it
+      TRADING_MODE:         ${TRADING_MODE:-paper}
+      # VNC password for optional visual debugging (localhost-only port mapping)
+      VNC_SERVER_PASSWORD:  ${VNC_SERVER_PASSWORD:-changeme}
+      # IBKR session config
+      TWS_ACCEPT_INCOMING:  accept
+      BYPASS_WARNING:       "yes"
+      TIME_ZONE:            ${TIME_ZONE:-America/New_York}
+      READ_ONLY_API:        "no"
+      # Auto-restart at 23:55 local to dodge IBKR's daily reset
+      IBC_AutoRestartTime:  "23:55"
+    ports:
+      # API ports — bind to localhost ONLY (never expose to the internet).
+      #
+      # IMPORTANT (gnzsnz image internals): IB Gateway's own API binds to
+      # 127.0.0.1:4001 (live) / 127.0.0.1:4002 (paper) INSIDE the container
+      # — localhost-only, unreachable from outside. The image runs a socat
+      # relay that re-exposes those on 0.0.0.0:4003 (live) and 0.0.0.0:4004
+      # (paper). So to reach the paper API from the host we must map the
+      # host port to the container's SOCAT port 4004, not 4002.
+      #   host 4002  ->  container 4004 (socat paper relay -> gw 127.0.0.1:4002)
+      #   host 4001  ->  container 4003 (socat live  relay -> gw 127.0.0.1:4001)
+      - "127.0.0.1:4002:4004"   # paper API (via socat relay)
+      - "127.0.0.1:4001:4003"   # live API (via socat relay; unused in paper)
+      # VNC — also localhost-only; use `ssh -L 5900:localhost:5900` to tunnel
+      - "127.0.0.1:5900:5900"
+    volumes:
+      - gt-ibgw-config:/home/ibgateway/Jts
+      - gt-ibgw-logs:/home/ibgateway/Jts/logs
+    healthcheck:
+      # `ss` is not in the image; grep /proc/net/tcp for the socat paper
+      # relay port 4004 (hex 0FA4) instead.
+      test: ["CMD-SHELL", "grep -q '00000000:0FA4' /proc/net/tcp || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+volumes:
+  gt-ibgw-config:
+  gt-ibgw-logs:

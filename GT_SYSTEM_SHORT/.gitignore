@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Data
+data/ticks/
+data/audit/
+.gt_audit.csv
+.gt_state.json
+
+# Test outputs
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+data/Logs/
+
+# Temporary files
+*.tmp
+# Added by code-review-graph
+.code-review-graph/
