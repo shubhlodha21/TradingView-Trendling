@@ -41,14 +41,20 @@ import pandas as pd
 #
 # MARKET is the default: by the time this runner fires, the crossing has already
 # happened, so the bot has nothing left to wait for and enters at market.
-# `--offset-entry-pct` is deliberately absent — GT ignores it in market mode,
-# and carrying a flag that does nothing invites the belief that it does.
+#
+# `--offset-entry-pct` IS passed even though the market entry ignores it, and
+# that is deliberate. --market is one-shot: the bot's LATER entries — the
+# re-entry after a stop-out, the session-open re-arm — fall back to a resting
+# STP-LMT, and those read this value. Omit it and the re-entry silently uses
+# GT's built-in 5bps default instead of the offset the operator chose, which is
+# a different order at a different price with no sign that anything changed.
 MARKET_TEMPLATE = (
     "GT_PAPER=false python3 run_live.py {ticker} "
     "--trigger {trigger} "
     "--market "
     "--port {port} "
     "--client-id {client_id} "
+    "--offset-entry-pct {offset_entry_pct} "
     "--stop {stop} "
     "--uvloop "
     "--qty {qty}"
@@ -81,6 +87,7 @@ MARKET_TEMPLATE_PAPER = (
     "--paper "
     "--port {port} "
     "--client-id {client_id} "
+    "--offset-entry-pct {offset_entry_pct} "
     "--stop {stop} "
     "--uvloop "
     "--qty {qty}"

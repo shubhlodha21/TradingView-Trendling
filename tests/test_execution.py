@@ -112,11 +112,18 @@ truthy("--uvloop is present", "--uvloop" in argv)
 # Market entry is the default: the crossing already happened upstream, so the
 # bot has nothing left to wait for.
 truthy("--market is passed by default", "--market" in argv)
-truthy("...and the entry offset is omitted, because GT ignores it in that mode",
-       "--offset-entry-pct" not in argv)
+
+# The entry offset rides along even though the market entry ignores it. --market
+# is one-shot inside GT: the re-entry after a stop-out falls back to a resting
+# STP-LMT and reads this value. Drop it and the re-entry quietly uses GT's 5bps
+# default instead of the operator's.
+check("the entry offset is carried for the later re-entry",
+      flag(argv, "--offset-entry-pct"), "0.001")
+check("qty is carried the same way", flag(argv, "--qty"), "512")
 check("the whole command reads as expected", up.command,
       "GT_PAPER=false python3 run_live.py AAPL --trigger 128.86 --market "
-      "--port 7496 --client-id 100 --stop 0.0025 --uvloop --qty 512")
+      "--port 7496 --client-id 100 --offset-entry-pct 0.001 --stop 0.0025 "
+      "--uvloop --qty 512")
 
 stop_limit = launcher(template=STOP_LIMIT_TEMPLATE).fire(signal("AAPL", "UP"))
 sl_argv = gt.parsed_command(stop_limit)
@@ -236,10 +243,11 @@ sized = gt.fire(signal("MSFT", "DOWN", qty=128, stop=0.005, offset_entry_pct=0.0
 sized_argv = gt.parsed_command(sized)
 check("config qty wins over the default", flag(sized_argv, "--qty"), "128")
 check("config stop wins", flag(sized_argv, "--stop"), "0.005")
+check("config offset wins", flag(sized_argv, "--offset-entry-pct"), "0.002")
 
 sized_sl = launcher(template=STOP_LIMIT_TEMPLATE).fire(
     signal("MSFT", "DOWN", qty=128, stop=0.005, offset_entry_pct=0.002))
-check("config offset wins where the template uses it",
+check("...on the stop-limit template too",
       flag(gt.parsed_command(sized_sl), "--offset-entry-pct"), "0.002")
 
 custom = launcher(template="cd {ticker} && bot --side {side} --px {trigger} "

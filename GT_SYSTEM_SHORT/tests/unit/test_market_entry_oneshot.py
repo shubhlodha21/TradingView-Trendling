@@ -10,8 +10,8 @@
 SHORT INVERSION. Only (1) may go in at market. (2) and (3) target a breakdown
 level price has NOT reached yet; firing them at market would short instantly at
 the inflated post-cover bid — the mirror of the regression the re-entry comment
-in `_on_gateway_fill` records ("Previously this was a plain LIMIT, which filled
-instantly..."). The one-shot flag is the guard against re-introducing it.
+in `_on_gateway_fill` records. The one-shot flag is the guard against
+re-introducing it.
 """
 import asyncio
 
@@ -106,6 +106,56 @@ class TestMarketEntryIsOneShot:
         eng, _ = engine
         order_id = _enter(eng)
         assert eng.registry.get(order_id).order_type is OrderType.MARKET
+
+
+class TestSizingCarriesIntoTheReEntry:
+    """Initial entry is MARKET; the re-entry is a LIMIT at the same size.
+
+    The operator sets --qty and --offset-entry-pct once, on the launch command.
+    Those must still govern the re-entry, which is a resting STP-LMT — if the
+    offset were dropped from the launch command, the re-entry would silently
+    fall back to GT's built-in default instead.
+    """
+
+    def test_quantity_is_identical_on_both_entries(self, engine):
+        eng, recorder = engine
+        _enter(eng)
+        _enter(eng, trigger=126.30)
+        assert [c["qty"] for c in recorder] == [100, 100]
+
+    def test_the_re_entry_gets_a_limit_derived_from_the_offset(self, engine):
+        eng, recorder = engine
+        _enter(eng)                                  # market: limit unused
+        _enter(eng, trigger=126.30)                  # stop-limit: limit matters
+
+        re_entry = recorder[-1]
+        expected_offset = eng._compute_limit_offset(126.30)
+        # SHORT INVERSION: the limit sits BELOW the trigger.
+        assert re_entry["parent_limit_price"] == pytest.approx(
+            eng._round_to_tick(eng._round_to_tick(126.30) - expected_offset)
+        )
+        # IBKR requires lmtPrice <= stopPrice for a SELL stop-limit.
+        assert re_entry["parent_limit_price"] <= re_entry["parent_stop_price"]
+
+    def test_the_offset_comes_from_config_not_a_default(self, monkeypatch):
+        """A non-default offset must reach the re-entry's limit price."""
+        eng, recorder = _build(monkeypatch, entry_market=True,
+                               offset_entry_pct=0.001)
+        _enter(eng)
+        _enter(eng, trigger=100.00)
+        # SHORT: limit = 100.00 - (0.001 x 100.00) = 99.90.
+        # GT's 0.0005 default would have given 99.95.
+        assert recorder[-1]["parent_limit_price"] == pytest.approx(99.90)
+
+    def test_stop_pct_is_unchanged_across_entries(self, engine):
+        """--stop 0.0025 governs the protective child on every cycle."""
+        eng, recorder = engine
+        _enter(eng)
+        _enter(eng, trigger=126.30)
+        for call, trigger in zip(recorder, (128.86, 126.30)):
+            assert call["child_stop_price"] == pytest.approx(
+                eng._protective_stop_price(trigger, 0.0025)
+            )
 
 
 class TestWithoutTheFlag:
