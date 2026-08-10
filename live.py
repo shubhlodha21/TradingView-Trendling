@@ -594,6 +594,9 @@ class Track:
     was_open: bool | None = None
     waiting_reported: bool = False
     pending_reported: bool = False
+    # Market-seconds offset of the last signal, so --signal-mode above can
+    # honour --cooldown the way the cross detector already does.
+    last_signal_offset: float | None = None
     _reported_error: str | None = field(default=None, repr=False)
 
     @property
@@ -1146,13 +1149,26 @@ def evaluate(track: Track, now: pd.Timestamp, args, out: Printer, log,
     )
     fire = event is not None
     if args.signal_mode == "above" and beyond:
-        # Level mode: the plain "live price is past the line" reading,
-        # re-asserted every cycle rather than only on the transition.
-        fire = True
+        # Level mode: "price is past the line" as a STATE, not a transition.
+        # Unlike cross mode this fires even when price was already beyond the
+        # line at startup -- which is the whole point, since a line the market
+        # has already passed produces no crossing to detect.
+        #
+        # It still obeys the same one-signal discipline as cross mode. Firing
+        # on every tick while beyond would restate the same fact once a second,
+        # flooding the signal log and the launcher's skip list.
+        if track.signals == 0:
+            fire = True
+        elif args.repeat and (
+            track.last_signal_offset is None
+            or offset - track.last_signal_offset >= args.cooldown
+        ):
+            fire = True
     if not fire:
         return False
 
     track.signals += 1
+    track.last_signal_offset = float(offset)
     payload = {
         **row,
         "side": "BUY" if track.direction == UP else "SELL",
