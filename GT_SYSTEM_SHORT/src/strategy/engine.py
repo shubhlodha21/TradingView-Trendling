@@ -161,6 +161,12 @@ class Engine:
         # sweep firing in between sees the child as orphan → cancels →
         # A57 cascades to parent → engine re-places fresh bracket).
         '_reconciling',
+        # Fencing-token peer of gateway.connection_epoch (SHORT mirror of the
+        # LONG EURUSD 2026-07-28 naked short). Holds the connection epoch the
+        # ledger was last reconciled against. Actuators may act only when this
+        # equals gateway.connection_epoch. NOT persisted — re-inits to -1 every
+        # start so a restart begins gate-closed until the first reconcile.
+        '_ledger_epoch',
         # Snapshot of _pending_stop as it was on the LAST disk save.
         # Reconciliation populates _pending_stop fresh from broker truth;
         # comparing against this tells us if a saved intent didn't survive
@@ -527,6 +533,12 @@ class Engine:
         self._market_entry_used: bool = False
         # A62: reconcile-in-progress flag — invariant sweep skips while True.
         self._reconciling: bool = False
+        # Fencing-token peer of gateway.connection_epoch (see __slots__).
+        # -1 so the actuation gate is CLOSED until the first reconcile stamps
+        # it; deliberately NOT persisted (kept out of _save_state /
+        # _load_state) so every restart re-earns "trusted" via a fresh
+        # reconcile rather than trusting a value from a previous process.
+        self._ledger_epoch: int = -1
         # Bracket-order child SELL stop (see __slots__ for full rationale).
         # None outside the bracket-active window.
         self._bracket_child: Optional[dict] = None
@@ -3204,10 +3216,50 @@ class Engine:
         # try/finally ensures the flag clears even on exception so a
         # raised reconcile doesn't leave the sweep silenced forever.
         self._reconciling = True
+        # Fencing token (SHORT mirror of LONG EURUSD naked-short 2026-07-28):
+        # capture the connection epoch we are about to reconcile against.
+        # Stamp _ledger_epoch only on CLEAN completion (below) so a raised
+        # reconcile leaves the gate closed — a half-built ledger is never
+        # marked "trusted" for this connection. If the connection flaps
+        # mid-reconcile gateway.connection_epoch advances past this value, so
+        # the stamp won't match → _actuation_allowed() stays closed → another
+        # reconcile is forced. Capturing at START (not end) is what makes it safe.
+        _epoch_at_start = getattr(self.gateway, 'connection_epoch', 0)
         try:
             await self._reconcile_open_orders_inner()
+            self._ledger_epoch = _epoch_at_start
         finally:
             self._reconciling = False
+
+    def _actuation_allowed(self) -> bool:
+        """Fencing-token gate: may an actuator act on ledger-derived position
+        state right now?
+
+        Returns True iff the ledger has been reconciled against broker
+        executions for the CURRENT connection. Every gateway (re)connect
+        bumps gateway.connection_epoch; `_reconcile_open_orders` stamps
+        `_ledger_epoch` to match once it has replayed any fills missed while
+        disconnected. Until they match, the ledger may be missing a fill that
+        landed while we were away, so no order-placing / cancelling actuator
+        may act — it must DEFER. Deferring is fail-safe: the open (short)
+        position stays covered by the resting broker bracket in the meantime.
+
+        Special cases:
+          * Paper (internal sim): always True — the engine IS the source of
+            truth; there is no broker position to go stale against.
+          * Gateway without connection_epoch (legacy / test double): fail
+            OPEN so this can never freeze a gateway predating the token.
+        """
+        if getattr(self.gateway, 'paper', False):
+            return True
+        if not getattr(self.gateway, 'connected', False):
+            return False
+        if getattr(self, '_reconciling', False):
+            return False
+        epoch = getattr(self.gateway, 'connection_epoch', None)
+        if epoch is None:
+            return True  # gateway predates the fencing token — legacy behavior
+        return epoch == self._ledger_epoch
 
     async def _reconcile_open_orders_inner(self) -> None:
         # Step 0 (NEW): Gap-fill _highest_price for the disconnect window.
@@ -5786,7 +5838,15 @@ class Engine:
                 #                             and cancel a leg we're about to claim
                 if (getattr(self, '_entry_placing', False)
                         or getattr(self, '_protective_stop_placing', False)
-                        or getattr(self, '_reconciling', False)):
+                        or getattr(self, '_reconciling', False)
+                        # Fencing-token gate (SHORT mirror of LONG EURUSD
+                        # naked-short 2026-07-28): also skip the orphan sweep
+                        # whenever the ledger is not reconciled for the current
+                        # connection epoch — a stale _bracket_child /
+                        # _pending_stop would let it cancel a leg it is about
+                        # to re-adopt. Superset of the _reconciling check
+                        # above; never skips less.
+                        or not self._actuation_allowed()):
                     continue
                 # Compute the SETS of LEGITIMATE engine_ids on BOTH sides.
                 # Anything at the broker NOT in the corresponding set is
@@ -5997,6 +6057,25 @@ class Engine:
                         "Will retry on next tick."
                     )
                     continue
+
+            # Fencing-token gate (SHORT mirror of LONG EURUSD naked-short
+            # 2026-07-28). Probe 1 (NAKED_POSITION -> arm protective BUY to
+            # cover) and Probe 2 (ENTRY_ORDER_MISSING -> place SELL) both READ
+            # ledger position state to decide whether to actuate. Do NOT let
+            # them act until the ledger has been reconciled against broker
+            # executions for the CURRENT connection epoch. Probe 0 above is a
+            # positions()-based check that is blind for FX (cash-ledger quirk),
+            # so the epoch is the real gate. Firing a cover-BUY on a stale
+            # IN_POSITION belief would BUY into a flat book -> naked LONG (the
+            # short-side mirror of the LONG naked short). Deferring is fail-safe
+            # — the position stays covered by the resting broker bracket; we
+            # re-probe next tick, and _after_reconnect's reconcile opens the gate.
+            if not self._actuation_allowed():
+                self._log(
+                    "[HEALTH] deferring probes — ledger not yet reconciled "
+                    "for current connection epoch (post-reconnect)"
+                )
+                continue
             try:
                 open_orders = self.gateway.fetch_open_orders() if hasattr(self.gateway, 'fetch_open_orders') else []
                 _SL_TYPES = ('STPLMT', 'STP')
@@ -6861,6 +6940,15 @@ class Engine:
             and self._stop_loss
             and ltp >= self._stop_loss
             and not getattr(self, '_pending_stop', None)
+            # Fencing-token gate (SHORT mirror of LONG EURUSD naked-short
+            # 2026-07-28): this reactive fallback fires on the engine's BELIEF
+            # of IN_POSITION (short). After a reconnect, before reconcile folds
+            # a phantom position, that belief can be stale — firing _exit here
+            # would BUY-to-cover into a flat book (naked LONG via the tick
+            # path, the parallel door to the health re-arm). Only act once the
+            # ledger is reconciled for the current connection epoch. Fail-safe:
+            # defer until then.
+            and self._actuation_allowed()
         ):
             self._log(f"STOP TRIGGERED (no active SL — reactive fallback): ltp={ltp:.2f} >= stop={self._stop_loss:.2f}")
             await self._exit(ltp, "STOP_LOSS", tick)

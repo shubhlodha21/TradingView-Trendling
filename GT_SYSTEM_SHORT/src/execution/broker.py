@@ -163,6 +163,15 @@ class Gateway:
         # in-cache ib.fills() sum. None ⇒ legacy live-sum behavior. A
         # read-only borrow — the gateway never owns the ledger's lifecycle.
         '_fill_ledger',
+        # Fencing token for the ledger-freshness gate (SHORT mirror of the
+        # LONG EURUSD 2026-07-28 naked short). Monotonic counter bumped +1 on
+        # every successful connect. The engine compares it against its own
+        # _ledger_epoch to decide whether the ledger has been reconciled for
+        # THIS connection before letting any actuator place/cancel orders.
+        # Lives here because connect() is the single choke point every
+        # (re)connection — the supervisor, the engine's active-reconnect, or a
+        # flap — must pass through, so it advances even for unobserved ones.
+        'connection_epoch',
     )
 
     def __init__(
@@ -189,6 +198,10 @@ class Gateway:
 
         self._ib = None
         self._status = ConnectionStatus.DISCONNECTED
+        # Fencing token — see __slots__. Starts at 0; the first successful
+        # connect() bumps it to 1. The engine's actuation gate stays closed
+        # until a reconcile stamps _ledger_epoch to match this value.
+        self.connection_epoch = 0
         self._connected_at: Optional[datetime] = None
         self._last_heartbeat: Optional[datetime] = None
         self._running = False
@@ -458,6 +471,13 @@ class Gateway:
             self._ib.reqMarketDataType(1)  # LIVE data (1=live, 2=delayed) — sync, no run_until_complete
 
             self._status = ConnectionStatus.CONNECTED
+            # Fencing token: a new connection is now live. Bump the epoch
+            # in the SAME synchronous block as the status flip (no await
+            # between them), so nothing can ever observe `connected == True`
+            # paired with a stale epoch. The engine's gate is therefore
+            # closed the instant this connection goes live and stays closed
+            # until a reconcile stamps _ledger_epoch to match.
+            self.connection_epoch += 1
             self._connected_at = self._ts()
             self._last_heartbeat = self._connected_at
             print(f"[Gateway] Connected!")
