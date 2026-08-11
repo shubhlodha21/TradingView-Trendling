@@ -356,10 +356,26 @@ class Engine:
         try:
             from src.assets import resolve as _resolve_spec
             self._asset_spec = _resolve_spec(config.ticker)
-        except Exception:
+        except Exception as _spec_err:
             # Defensive: never let spec resolution kill the engine.
             # Legacy paths will run if _asset_spec is None.
             self._asset_spec = None
+            # ...but say so, loudly. A None spec silently reverts every
+            # session check to the hardcoded US-equity window (09:30-16:00
+            # ET). For an FX or futures bot that means sitting idle through
+            # its real trading hours, refusing entries with no clue why. The
+            # logger is wired later in __init__, so this goes to stderr --
+            # which is what the operator is watching in the pane anyway.
+            import sys as _sys
+            print(
+                f"\n*** WARNING: no AssetSpec for {config.ticker!r} "
+                f"({type(_spec_err).__name__}: {_spec_err}).\n"
+                f"*** Falling back to US-equity behaviour: session hours "
+                f"09:30-16:00 ET, 2dp tick rounding, SMART/USD routing.\n"
+                f"*** If {config.ticker!r} is NOT a US equity, entries will be "
+                f"refused outside those hours and prices may round wrong.\n",
+                file=_sys.stderr, flush=True,
+            )
 
         # Entry-rejection backoff state (see __slots__ docstring).
         self._last_entry_rejected_at = None

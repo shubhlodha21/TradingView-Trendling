@@ -1236,15 +1236,32 @@ class State:
 
         # 4. Session / connection state from engine + supervisor (when available).
         self.paused = getattr(self.engine, '_paused', False)
-        # session_is_open() is the authoritative read; cheap to compute.
+        # Session state, per ASSET CLASS. The engine's _session_is_open() routes
+        # through the AssetSpec, so FX reports its 24x5 week and futures their
+        # venue calendar. Reading the global session_is_open() here instead --
+        # as this panel used to -- painted every FX bot "closed, opens in 8.4h"
+        # all night while the engine underneath was correctly trading, which
+        # reads exactly like the bot is broken.
         try:
-            from src.config.models import session_is_open, seconds_until_session_open
-            self.in_session = session_is_open()
+            spec = getattr(self.engine, '_asset_spec', None)
+            now_utc = datetime.now(timezone.utc)
+
+            if hasattr(self.engine, '_session_is_open'):
+                self.in_session = self.engine._session_is_open()
+            else:
+                from src.config.models import session_is_open
+                self.in_session = session_is_open()
+
             if self.in_session:
                 # Inside session: time-until-close is harder to compute generically;
                 # we just show "open" in the panel and seconds until close on a best-effort basis.
                 self.next_session_change = 0.0
+            elif spec is not None:
+                self.next_session_change = max(
+                    0.0, (spec.session.next_open(now_utc) - now_utc).total_seconds()
+                )
             else:
+                from src.config.models import seconds_until_session_open
                 self.next_session_change = seconds_until_session_open()
         except Exception:
             self.in_session = True
