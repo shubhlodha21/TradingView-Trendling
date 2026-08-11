@@ -348,9 +348,16 @@ def build_parser() -> argparse.ArgumentParser:
     ib.add_argument("--ib-port", type=int, default=int(os.environ.get("IB_PORT", 7497)),
                     help="7497 TWS paper, 7496 TWS live, 4002 Gateway paper, "
                          "4001 Gateway live. Default: 7497.")
-    ib.add_argument("--ib-client-id", type=int, default=int(os.environ.get("IB_CLIENT_ID", 17)),
-                    help="Must be unique per API connection. One connection covers "
-                         "every ticker. Default: 17.")
+    ib.add_argument("--ib-client-id", type=int,
+                    default=int(os.environ["IB_CLIENT_ID"])
+                    if os.environ.get("IB_CLIENT_ID") else None,
+                    help="This runner's own IB connection id -- one connection "
+                         "covers every ticker it watches. Left unset it is "
+                         "claimed automatically from 17 upward, so a second "
+                         "runner in another terminal cannot collide with the "
+                         "first. TWS resolves a duplicate by dropping the OLDER "
+                         "connection, which is a silent way to kill a running "
+                         "bot. Set it only if you need a fixed id.")
     ib.add_argument("--sec-type", default="auto",
                     choices=["auto", "STK", "CASH", "CRYPTO", "FUT", "CFD", "IND"],
                     help="Default: guessed per ticker.")
@@ -750,6 +757,36 @@ def attach_feeds(tracks: list[Track], args, out: Printer):
 # main loop
 # --------------------------------------------------------------------------- #
 
+def client_id_pool(args) -> Path:
+    """Directory of claimed IB client ids, shared by the feed and the bots."""
+    log_dir = Path(args.exec_log).parent if args.exec_log else Path("logs")
+    return log_dir / ".client_ids.d"
+
+
+def claim_feed_client_id(args, out: Printer):
+    """Pick this runner's own IB connection id.
+
+    Auto-claimed unless the operator fixed one. Two runners started in two
+    terminals both defaulted to 17 before this: TWS accepts the second and
+    silently drops the first, so one runner's quotes just stop arriving.
+    Returns (client_id, allocator_or_None) -- the allocator is kept so the id
+    can be released on clean shutdown.
+    """
+    from rth.execution import ClientIdAllocator
+
+    if args.ib_client_id is not None:
+        return int(args.ib_client_id), None
+
+    pool = client_id_pool(args)
+    allocator = ClientIdAllocator(pool.parent / ".feed_client_id", base=17,
+                                  reserved_dir=pool)
+    client_id = allocator.next()
+    out.status(f"claimed IB client id {client_id} for this runner's feed "
+               f"(auto; pass --ib-client-id to fix it)",
+               ib_client_id=client_id)
+    return client_id, allocator
+
+
 def build_launcher(args, tracks: list[Track], out: Printer):
     """Wire up the execution launcher, or None if signals stay informational."""
     from rth.execution import (
@@ -774,6 +811,9 @@ def build_launcher(args, tracks: list[Track], out: Printer):
         allocator=ClientIdAllocator(
             args.exec_client_id_file or (log_dir / ".gt_client_id"),
             base=args.exec_client_id,
+            # Shared with the feed's pool: separate ranges, one claim space, so
+            # a bot can never be handed the id the runner is connected on.
+            reserved_dir=client_id_pool(args),
         ),
         session=args.exec_session,
         defaults={
@@ -949,6 +989,11 @@ def run(args) -> int:
                    f"{len(frames)} instrument(s) to {args.export_line}",
                    path=args.export_line, points=int(len(combined)))
 
+    # -- this runner's own IB connection --------------------------------------
+
+    feed_client_id, feed_id_allocator = claim_feed_client_id(args, out)
+    args.ib_client_id = feed_client_id
+
     # -- execution -----------------------------------------------------------
 
     # Opt-in only. A run that never mentions execution gets none of it: no
@@ -1033,15 +1078,20 @@ def run(args) -> int:
     except KeyboardInterrupt:
         pass
     finally:
-        _finish(out, cycles, total_signals, closable, log, recorder)
+        _finish(out, cycles, total_signals, closable, log, recorder,
+                feed_id_allocator, feed_client_id)
 
     return 0
 
 
 def _finish(out: Printer, cycles: int, signals: int, closable, log,
-            recorder=None) -> None:
+            recorder=None, feed_id_allocator=None, feed_client_id=None) -> None:
     if closable is not None:
         closable.stop()
+    if feed_id_allocator is not None and feed_client_id is not None:
+        # Our own socket is definitely closed now, so the id can go back in the
+        # pool. Launched bots keep theirs -- they outlive us.
+        feed_id_allocator.release(feed_client_id)
     if log is not None:
         log.close()
     if recorder is not None:

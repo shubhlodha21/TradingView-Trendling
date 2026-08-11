@@ -182,10 +182,18 @@ class ClientIdAllocator:
     so ``peek`` can report the next id before anything is claimed.
     """
 
-    def __init__(self, path: str | os.PathLike, base: int = 100):
+    def __init__(self, path: str | os.PathLike, base: int = 100,
+                 reserved_dir: str | os.PathLike | None = None):
         self.path = Path(path)
-        # One tiny marker file per claimed id, beside the counter.
-        self.reserved_dir = self.path.parent / f"{self.path.name}.d"
+        # One tiny marker file per claimed id. Pools that must not collide with
+        # each other -- the runner's own feed connection and the bots it
+        # launches -- share ONE reserved_dir while keeping separate counters,
+        # so each keeps its own number range but neither can ever be handed an
+        # id the other is holding.
+        self.reserved_dir = (
+            Path(reserved_dir) if reserved_dir
+            else self.path.parent / f"{self.path.name}.d"
+        )
         self.base = int(base)
         self._lock = threading.Lock()
 
@@ -206,8 +214,14 @@ class ClientIdAllocator:
         return max(claimed) if claimed else self.base - 1
 
     def peek(self) -> int:
-        """The highest id handed out so far (base - 1 if none)."""
-        return max(self.base - 1, self._counter_hint(), self._highest_claim())
+        """The highest id this pool has handed out (base - 1 if none).
+
+        Deliberately does NOT consult the shared reserved dir: a pool based at
+        17 must keep reporting 17-ish numbers even when another pool has
+        claimed 100+ in the same directory. Skipping past ids someone else
+        holds is `next`'s job, via O_EXCL.
+        """
+        return max(self.base - 1, self._counter_hint())
 
     # -- allocation ---------------------------------------------------------
 
@@ -242,6 +256,25 @@ class ClientIdAllocator:
                 f"could not claim a client id in {self.reserved_dir} after "
                 f"10,000 attempts starting at {self.peek() + 1}"
             )
+
+    def release(self, value: int) -> None:
+        """Return an id to the pool.
+
+        Only safe for a connection this process is definitely finished with --
+        its own feed socket on clean shutdown. Launched bots are NEVER released:
+        they outlive the runner, and handing their id to a new connection would
+        make TWS drop a bot that is holding a position.
+        """
+        value = int(value)
+        try:
+            (self.reserved_dir / str(value)).unlink()
+        except OSError:
+            pass
+        # Rewind the hint if we were its most recent claimant, so stopping and
+        # restarting one runner settles back on the same id instead of climbing
+        # 17, 18, 19... forever across restarts.
+        if self._counter_hint() == value:
+            self._write_hint(value - 1)
 
     def _write_hint(self, value: int) -> None:
         try:

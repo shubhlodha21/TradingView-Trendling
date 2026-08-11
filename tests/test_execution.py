@@ -184,6 +184,37 @@ check("...and are contiguous from the base", sorted(grabbed),
 truthy("each claim leaves a marker so it can never be reissued",
        len(list((concurrent_dir / "cid.d").iterdir())) == 20)
 
+# The runner's own feed connection and the bots it launches draw from separate
+# ranges but ONE claim space. Before this, two runners in two terminals both
+# defaulted to client id 17: TWS accepts the second and silently drops the
+# first, so one runner's quotes simply stop arriving.
+pool = WORK / "shared" / ".client_ids.d"
+feed_pool = lambda: ClientIdAllocator(  # noqa: E731 - terse on purpose
+    WORK / "shared" / ".feed_client_id", base=17, reserved_dir=pool)
+bot_pool = lambda: ClientIdAllocator(  # noqa: E731
+    WORK / "shared" / ".gt_client_id", base=100, reserved_dir=pool)
+
+feed_ids = [feed_pool().next() for _ in range(3)]
+bot_ids = [bot_pool().next() for _ in range(3)]
+check("separate runners get separate feed ids", feed_ids, [17, 18, 19])
+check("bots keep their own range", bot_ids, [100, 101, 102])
+check("the two ranges never overlap", set(feed_ids) & set(bot_ids), set())
+
+# Push the feed range up through the bot base and confirm it steps over
+# ids that are already held rather than reissuing one.
+climbed = [feed_pool().next() for _ in range(95)]
+truthy("the feed range can climb past the bot base", max(climbed) > 100)
+next_bot = bot_pool().next()
+truthy("...and the next bot skips every id already claimed",
+       next_bot not in climbed and next_bot not in feed_ids)
+
+released = feed_pool()
+rid = released.next()
+released.release(rid)
+truthy("a released feed id returns to the pool",
+       not (pool / str(rid)).exists())
+check("...and is handed out again", feed_pool().next(), rid)
+
 fresh_dir = WORK / "fresh"
 first_ever = launcher(
     allocator=ClientIdAllocator(fresh_dir / "counter", base=250)

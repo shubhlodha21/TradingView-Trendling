@@ -45,6 +45,14 @@ def _build(monkeypatch, **config_overrides):
                         raising=True)
     monkeypatch.setattr(Engine, "_save_state", lambda self, *a, **k: None,
                         raising=True)
+    # Hold the session open. Without this the suite is wall-clock dependent:
+    # the entry path correctly refuses to place outside AAPL's RTH window, so
+    # every assertion here passes during US market hours and fails overnight.
+    # What is under test is the market-vs-stop-limit decision, not the gate.
+    monkeypatch.setattr(Engine, "_session_is_open", lambda self, now=None: True,
+                        raising=True)
+    monkeypatch.setattr(Engine, "_entries_allowed", lambda self: True,
+                        raising=True)
 
     settings = dict(ticker="AAPL", trigger_price=128.86, quantity=100,
                     stop_loss_pct=0.0025, paper_trading=False)
