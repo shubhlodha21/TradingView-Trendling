@@ -331,7 +331,11 @@ check("a custom template gets side and trigger", custom.command,
 # --------------------------------------------------------------------------- #
 print("\n=== tmux hand-off ===")
 
-# The invocation itself is a pure function, so it can be checked anywhere.
+# Two steps, on purpose. The window is created with NO command so tmux starts
+# the user's shell in it; the bot is then typed in with send-keys. Handing the
+# command to new-window instead makes tmux exec it under a bare `sh -c`, which
+# leaves no interactive shell behind the full-screen GT dashboard and makes
+# moving between windows awkward.
 tm = launcher(mode="tmux", session="gt-test")
 pending = tm.build(signal("AAPL", "UP"))
 
@@ -341,9 +345,20 @@ check("with no session, one is created", argv_new[:5],
 check("the window is named for the trade", argv_new[argv_new.index("-n") + 1],
       "AAPL-LONG")
 check("it starts in the LONG folder", argv_new[argv_new.index("-c") + 1], str(LONG))
-truthy("the bot command is handed to tmux",
-       "GT_PAPER=false python3 run_live.py AAPL --trigger 128.86" in argv_new[-1])
-truthy("the window is held open after the bot exits", argv_new[-1].endswith("exec bash"))
+truthy("the window is created with a shell, not the bot command",
+       not any("run_live.py" in part for part in argv_new))
+check("...so the last argument is the working directory", argv_new[-2], "-c")
+
+sent = tm.send_keys_argv(pending, inside=False)
+check("the bot is typed in afterwards", sent[:3], ["tmux", "send-keys", "-t"])
+check("...into the right window", sent[3], "gt-test:AAPL-LONG")
+truthy("...as the real command",
+       "GT_PAPER=false python3 run_live.py AAPL --trigger 128.86" in sent[4])
+check("...submitted with a newline", sent[-1], "C-m")
+truthy("the window is held open after the bot exits",
+       "press enter or Ctrl-D to close" in sent[4])
+truthy("no exec bash -- the shell is already the window's process",
+       "exec bash" not in sent[4])
 
 argv_add, _ = tm.tmux_argv(pending, inside=False, session_exists=True)
 check("an existing session gets a new window", argv_add[:5],
@@ -354,6 +369,8 @@ check("inside tmux the window joins the current session", argv_inside[:4],
       ["tmux", "new-window", "-d", "-n"])
 check("...and says so", where_inside, "current session")
 check("...rather than targeting a named one", "-t" in argv_inside, False)
+check("...and send-keys targets the bare window name",
+      tm.send_keys_argv(pending, inside=True)[3], "AAPL-LONG")
 
 # End to end, with a fake tmux recording its argv. POSIX only: Windows cannot
 # exec a shebang script through subprocess.

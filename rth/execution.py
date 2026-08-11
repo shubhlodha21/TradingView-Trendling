@@ -413,39 +413,74 @@ class TradeLauncher:
         self._record(launch)
         return launch
 
+    # The command the window's shell is asked to run, once it exists.
+    def window_command(self, launch: Launch) -> str:
+        """What gets typed into the new window's shell."""
+        # Hold the window open after the bot exits so its last words survive.
+        return (
+            f"{launch.command}; echo; "
+            f"echo '[{launch.window} exited -- press enter or Ctrl-D to close]'"
+        )
+
     def tmux_argv(self, launch: Launch, inside: bool | None = None,
                   session_exists: bool | None = None) -> tuple[list[str], str]:
-        """The tmux invocation for a launch, and a description of where it lands.
+        """The tmux invocation that CREATES the window, and where it lands.
 
-        Split out from the call so the command can be asserted without opening
-        a window.
+        Deliberately creates the window with no command, so tmux starts the
+        user's default shell in it. The bot is then typed in with send-keys
+        (see :meth:`send_keys_argv`).
+
+        Passing the command to new-window instead makes tmux exec it under a
+        bare `sh -c` with no interactive shell behind it. The window then has
+        no job control, no shell profile, no scrollback once the process
+        redraws, and a full-screen TUI like the GT dashboard ends up owning the
+        terminal in a way that makes moving between windows awkward. Creating
+        a real shell first is what tmux.sh already does for the runner panes;
+        this makes the launched bots match.
+
+        Split out from the call so the invocation can be asserted without
+        opening a window.
         """
-        # Hold the window open after the bot exits so its last words survive.
-        held = (
-            f"{launch.command}; echo; "
-            f"echo '[{launch.window} exited -- press enter or Ctrl-D to close]'; "
-            f"exec bash"
-        )
         if inside is None:
             inside = bool(os.environ.get("TMUX"))
 
         if inside:
             return (["tmux", "new-window", "-d", "-n", launch.window,
-                     "-c", launch.cwd, held], "current session")
+                     "-c", launch.cwd], "current session")
         if session_exists is None:
             session_exists = self._session_exists()
         if session_exists:
-            return (["tmux", "new-window", "-d", "-t", self.session, "-n", launch.window,
-                     "-c", launch.cwd, held], f"session {self.session}")
-        return (["tmux", "new-session", "-d", "-s", self.session, "-n", launch.window,
-                 "-c", launch.cwd, held], f"new session {self.session}")
+            return (["tmux", "new-window", "-d", "-t", self.session,
+                     "-n", launch.window, "-c", launch.cwd],
+                    f"session {self.session}")
+        return (["tmux", "new-session", "-d", "-s", self.session,
+                 "-n", launch.window, "-c", launch.cwd],
+                f"new session {self.session}")
+
+    def send_keys_argv(self, launch: Launch, inside: bool | None = None) -> list[str]:
+        """The invocation that types the bot command into the new window."""
+        if inside is None:
+            inside = bool(os.environ.get("TMUX"))
+        target = launch.window if inside else f"{self.session}:{launch.window}"
+        return ["tmux", "send-keys", "-t", target,
+                self.window_command(launch), "C-m"]
 
     def _launch_tmux(self, launch: Launch) -> str:
         argv, target = self.tmux_argv(launch)
-        result = subprocess.run(argv, capture_output=True, text=True)
-        if result.returncode != 0:
+        opened = subprocess.run(argv, capture_output=True, text=True)
+        if opened.returncode != 0:
             raise RuntimeError(
-                f"tmux refused the window: {result.stderr.strip() or result.returncode}"
+                f"tmux refused the window: {opened.stderr.strip() or opened.returncode}"
+            )
+
+        # The window now holds an interactive shell. Type the bot into it.
+        typed = subprocess.run(self.send_keys_argv(launch),
+                               capture_output=True, text=True)
+        if typed.returncode != 0:
+            raise RuntimeError(
+                f"tmux window {launch.window} opened but the command could not be "
+                f"sent: {typed.stderr.strip() or typed.returncode}. The window is "
+                f"there with a shell in it -- run the command by hand or close it."
             )
         return f"tmux window {launch.window} in {target}"
 

@@ -209,6 +209,27 @@ signal log. Detach with `Ctrl-b d`, come back with `tmux attach -t rth`.
 ./tmux.sh --per-ticker lines.csv       # one window per instrument
 ```
 
+#### Moving between windows
+
+| Keys | Does |
+|---|---|
+| `Ctrl-b w` | **Pick from a list** — easiest once several bots are open |
+| `Ctrl-b n` / `Ctrl-b p` | Next / previous window |
+| `Ctrl-b 0`…`9` | Jump to a window by number |
+| `Ctrl-b ,` | Rename the current window |
+
+Every window — the runner panes and each launched bot — is created running your
+normal shell, with the command typed in afterwards. That matters: create a
+window *with* the command as its process and tmux execs it under a bare
+`sh -c`, leaving no interactive shell behind a full-screen TUI like the GT
+dashboard, which makes moving between windows awkward. It also means that when
+a bot exits you are left at a prompt in the right directory instead of losing
+the window.
+
+If `Ctrl-b` seems to do nothing at all, you are probably in **nested** tmux —
+an outer session is swallowing the prefix. Press `Ctrl-b` twice to send it
+through to the inner session.
+
 Which to pick:
 
 | | single process (default) | `--per-ticker` |
