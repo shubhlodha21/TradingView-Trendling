@@ -75,50 +75,37 @@ STOP_LIMIT_TEMPLATE = (
     "--qty {qty}"
 )
 
-# Paper variants. Spelled out in full rather than derived by string surgery on
-# the live ones: whoever reads this file must be able to see, literally, what
-# will be sent. Both the env var and --paper are set — GT honours either, and
-# belt-and-braces is cheap insurance on the one setting that decides whether
-# real money moves.
-MARKET_TEMPLATE_PAPER = (
-    "GT_PAPER=true python3 run_live.py {ticker} "
-    "--trigger {trigger} "
-    "--market "
-    "--paper "
-    "--port {port} "
-    "--client-id {client_id} "
-    "--offset-entry-pct {offset_entry_pct} "
-    "--stop {stop} "
-    "--uvloop "
-    "--qty {qty}"
-)
-
-STOP_LIMIT_TEMPLATE_PAPER = (
-    "GT_PAPER=true python3 run_live.py {ticker} "
-    "--trigger {trigger} "
-    "--paper "
-    "--port {port} "
-    "--client-id {client_id} "
-    "--offset-entry-pct {offset_entry_pct} "
-    "--stop {stop} "
-    "--uvloop "
-    "--qty {qty}"
-)
-
 DEFAULT_TEMPLATE = MARKET_TEMPLATE
 
+# GT_PAPER IS ALWAYS false. This is not an oversight -- it is the fix for a real
+# incident.
+#
+# GT_PAPER=true / --paper does NOT mean "trade the IB paper account". It
+# switches GT to its own internal simulator: `_paper_order` fabricates fills
+# through `_execute_fill` and contains zero placeOrder calls, so NOTHING
+# reaches IBKR. The dashboard still shows FILLED, because GT invented the fill.
+# A GBPUSD run "filled" at 1.4012 while the market sat at 1.35 -- no venue
+# fills 500 pips away, and the gap-down protective cascade that followed was
+# the simulator reacting to its own fiction.
+#
+# Paper versus live is therefore decided by the PORT alone, which is the only
+# thing that actually changes where the order goes:
+#
+#     7497 / 4002   IB PAPER account -- real orders, real venue, fake money
+#     7496 / 4001   LIVE account     -- real money
+#
+# Both run GT_PAPER=false, because both place real orders.
 
-def pick_template(entry: str = "market", paper: bool = False) -> str:
-    """The template for an entry style and account type."""
+
+def pick_template(entry: str = "market") -> str:
+    """The template for an entry style. Both place real orders."""
     if entry not in ("market", "stop-limit"):
         raise ValueError("entry must be 'market' or 'stop-limit'")
-    if entry == "market":
-        return MARKET_TEMPLATE_PAPER if paper else MARKET_TEMPLATE
-    return STOP_LIMIT_TEMPLATE_PAPER if paper else STOP_LIMIT_TEMPLATE
+    return MARKET_TEMPLATE if entry == "market" else STOP_LIMIT_TEMPLATE
 
 
-# TWS/Gateway ports, by account type. Getting this wrong is the other way to
-# accidentally trade live, so the paper flag moves the port with it.
+# TWS/Gateway ports, by account. This is the only switch between fake and real
+# money, so the paper flag moves it and nothing else.
 LIVE_PORT, PAPER_PORT = 7496, 7497
 
 LONG_DIR_NAME = "GT_SYSTEM_LONG"
@@ -523,7 +510,7 @@ class TradeLauncher:
         return [
             f"mode        {self.mode}"
             + ("  (nothing will be executed)" if self.mode == PRINT else ""),
-            f"account     {'LIVE MONEY' if self.is_live_money else 'paper'}",
+            f"account     {self.account_label}",
             f"UP   ->     {self.long_dir}",
             f"DOWN ->     {self.short_dir}",
             f"client ids  from {self.allocator.peek() + 1}, one per launch",
@@ -531,10 +518,29 @@ class TradeLauncher:
         ]
 
     @property
+    def port(self) -> int | None:
+        try:
+            return int(self.defaults.get("port"))
+        except (TypeError, ValueError):
+            return None
+
+    @property
     def is_live_money(self) -> bool:
-        """Whether the template asks the execution system for real trading."""
-        lowered = self.template.lower()
-        return "gt_paper=false" in lowered.replace(" ", "")
+        """Whether these launches can lose real money.
+
+        Decided by the PORT, not by GT_PAPER. GT_PAPER=false is now constant --
+        it means "place real orders", which is true of the paper account too.
+        The port is the only thing that selects which account they land in.
+        """
+        return self.port in (LIVE_PORT, 4001)
+
+    @property
+    def account_label(self) -> str:
+        if self.port in (PAPER_PORT, 4002):
+            return f"IB PAPER account (port {self.port}) -- real orders, fake money"
+        if self.is_live_money:
+            return f"LIVE MONEY (port {self.port})"
+        return f"port {self.port} -- unrecognised, check which account this is"
 
     def parsed_command(self, launch: Launch) -> list[str]:
         """The command split into argv, for display or assertion in tests."""

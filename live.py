@@ -320,9 +320,14 @@ def build_parser() -> argparse.ArgumentParser:
     sig.add_argument("--trigger", default="last", choices=["last", "touch"],
                      help="'last' needs the traded price through the line; 'touch' "
                           "accepts the wick. Default: last.")
-    sig.add_argument("--signal-mode", default="cross", choices=["cross", "above"],
-                     help="'cross' fires on the transition through the line (default). "
-                          "'above' fires on every tick the price is beyond it.")
+    sig.add_argument("--signal-mode", default="above", choices=["above", "cross"],
+                     help="'above' (default) treats being past the line as a STATE: "
+                          "if price is already beyond it when the runner starts, it "
+                          "signals immediately rather than waiting for a crossing "
+                          "that has already happened. Fires once. 'cross' is the "
+                          "stricter reading -- it needs a transition through the "
+                          "line, so a line the market has already passed never "
+                          "fires at all.")
     sig.add_argument("--repeat", action="store_true",
                      help="Keep signalling on re-crosses instead of stopping at the first.")
     sig.add_argument("--cooldown", type=float, default=0.0,
@@ -406,10 +411,11 @@ def build_parser() -> argparse.ArgumentParser:
                     help="Where the client-id counter persists, so a restart never "
                          "reissues an id a running bot holds. Default: logs/.gt_client_id.")
     ex.add_argument("--exec-paper", action="store_true",
-                    help="Launch the bot against the PAPER account: sends "
-                         "GT_PAPER=true and --paper, and moves the bot's port to "
-                         "7497 unless --exec-port says otherwise. Use this for "
-                         "every shakedown run.")
+                    help="Point the bot at the IB PAPER account: sets its port to "
+                         "7497 unless --exec-port says otherwise. Real orders on "
+                         "a real venue with fake money. NOTE this does NOT pass "
+                         "GT's --paper flag, which would switch GT to its own "
+                         "internal simulator and never contact IBKR at all.")
     ex.add_argument("--exec-port", type=int, default=None, metavar="PORT",
                     help="IBKR port passed to the bot. Default: 7496 live, "
                          "7497 with --exec-paper.")
@@ -806,7 +812,7 @@ def build_launcher(args, tracks: list[Track], out: Printer):
         gt_root=root,
         long_dir=args.long_dir,
         short_dir=args.short_dir,
-        template=args.exec_template or pick_template(args.exec_entry, args.exec_paper),
+        template=args.exec_template or pick_template(args.exec_entry),
         mode=args.on_signal,
         allocator=ClientIdAllocator(
             args.exec_client_id_file or (log_dir / ".gt_client_id"),

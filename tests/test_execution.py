@@ -24,10 +24,8 @@ from rth.execution import (
     DEFAULT_TEMPLATE,
     LIVE_PORT,
     MARKET_TEMPLATE,
-    MARKET_TEMPLATE_PAPER,
     PAPER_PORT,
     STOP_LIMIT_TEMPLATE,
-    STOP_LIMIT_TEMPLATE_PAPER,
     ClientIdAllocator,
     TradeLauncher,
     pick_template,
@@ -257,39 +255,51 @@ truthy("GT_PAPER=false is recognised as live money", gt.is_live_money)
 
 
 # --------------------------------------------------------------------------- #
-print("\n=== paper vs live ===")
+print("\n=== paper vs live is the PORT, never GT_PAPER ===")
 
-# The setting that decides whether real money moves gets its own tests.
-check("live + market", pick_template("market", paper=False), MARKET_TEMPLATE)
-check("live + stop-limit", pick_template("stop-limit", paper=False),
-      STOP_LIMIT_TEMPLATE)
-check("paper + market", pick_template("market", paper=True), MARKET_TEMPLATE_PAPER)
-check("paper + stop-limit", pick_template("stop-limit", paper=True),
-      STOP_LIMIT_TEMPLATE_PAPER)
+# GT_PAPER=true switches GT to its OWN simulator: _paper_order fabricates fills
+# through _execute_fill and contains zero placeOrder calls, so nothing reaches
+# IBKR while the dashboard still shows FILLED. Observed live -- a GBPUSD run
+# "filled" at 1.4012 with the market at 1.35. It is therefore never emitted.
+# Both accounts place real orders; only the port picks which one.
+check("market template", pick_template("market"), MARKET_TEMPLATE)
+check("stop-limit template", pick_template("stop-limit"), STOP_LIMIT_TEMPLATE)
 try:
     pick_template("yolo")
     truthy("an unknown entry style is rejected", False)
 except ValueError:
     truthy("an unknown entry style is rejected", True)
 
-paper = launcher(template=MARKET_TEMPLATE_PAPER,
-                 defaults={"port": PAPER_PORT, "qty": 512, "stop": 0.0025,
-                           "offset_entry_pct": 0.001})
-paper_launch = paper.fire(signal("AAPL", "UP"))
-paper_argv = paper.parsed_command(paper_launch)
-check("paper sets the env var", paper_argv[0], "GT_PAPER=true")
-truthy("...and passes --paper too, since GT honours either",
-       "--paper" in paper_argv)
-check("...and targets the paper port", flag(paper_argv, "--port"), "7497")
-truthy("a paper launcher is not live money", not paper.is_live_money)
-truthy("...and says so in the banner",
-       any("account     paper" in line for line in paper.describe()))
-truthy("a live launcher says LIVE MONEY in the banner",
-       any("account     LIVE MONEY" in line for line in gt.describe()))
+for _name, _template in (("market", MARKET_TEMPLATE),
+                         ("stop-limit", STOP_LIMIT_TEMPLATE)):
+    truthy(f"the {_name} template never enables GT's simulator",
+           "GT_PAPER=false" in _template and "--paper" not in _template)
+
+sizing = {"qty": 512, "stop": 0.0025, "offset_entry_pct": 0.001}
+
+paper = launcher(defaults={"port": PAPER_PORT, **sizing})
+paper_argv = paper.parsed_command(paper.fire(signal("AAPL", "UP")))
+check("a paper run still places REAL orders", paper_argv[0], "GT_PAPER=false")
+truthy("...and never passes --paper", "--paper" not in paper_argv)
+check("...only the port differs", flag(paper_argv, "--port"), "7497")
+truthy("a paper port is not live money", not paper.is_live_money)
+truthy("...and the banner names the account",
+       "IB PAPER account" in paper.account_label)
+
+live = launcher(defaults={"port": LIVE_PORT, **sizing})
+truthy("a live port is live money", live.is_live_money)
+truthy("...and the banner says so", "LIVE MONEY" in live.account_label)
+
+odd = launcher(defaults={"port": 1234, **sizing})
+truthy("an unrecognised port is never silently treated as live",
+       not odd.is_live_money and "unrecognised" in odd.account_label)
 check("the two ports never collide", (LIVE_PORT, PAPER_PORT), (7496, 7497))
-truthy("a paper template is not",
-       not launcher(template="python3 run_live.py {ticker} --paper "
-                             "--trigger {trigger} --client-id {client_id}").is_live_money)
+# is_live_money reads the PORT, never the template text. A template mentioning
+# --paper does not make a live port safe -- that was the old, wrong heuristic.
+truthy("a --paper template on a live port is still live money",
+       launcher(template="python3 run_live.py {ticker} --paper "
+                         "--trigger {trigger} --port {port} "
+                         "--client-id {client_id}").is_live_money)
 
 try:
     launcher(template="python3 run_live.py {ticker} --lot {lot_size}").fire(signal())
